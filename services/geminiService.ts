@@ -1,5 +1,5 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { UserConfig, ConfigResult } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -44,42 +44,56 @@ const PRODUCT_LIST = [
   "https://www.schumer.nl/product/wilh-steinberg/"
 ];
 
+// Robuuste Fallback met 3 verschillende producten
+const FALLBACK_RESULTS: ConfigResult = {
+  title: "Onze aanbevelingen voor u",
+  intro: "Op basis van onze expertise hebben we drie instrumenten geselecteerd die uitstekend passen bij uw profiel:",
+  showShowroomCTA: true,
+  recommendations: [
+    {
+      model: "Yamaha U1 Silent",
+      motivation: "De gouden standaard voor zowel beginners als gevorderden. Dankzij het Silent systeem speelt u op elk moment van de dag zonder anderen te storen.",
+      link: "https://www.schumer.nl/product/yamaha-u1-silent/",
+      type: "product",
+      ctaText: "Bekijk model"
+    },
+    {
+      model: "Schimmel 174T Vleugel",
+      motivation: "Een karaktervolle Duitse vleugel met een ongekende klankrijkdom. De perfecte keuze voor de veeleisende pianist die een statement in de woonkamer zoekt.",
+      link: "https://www.schumer.nl/product/schimmel-174t/",
+      type: "product",
+      ctaText: "Ontdek vleugel"
+    },
+    {
+      model: "Yamaha B3 Silent",
+      motivation: "Uitmuntende prijs-kwaliteitverhouding. Een robuust instrument met een heldere klank en de vertrouwde Yamaha kwaliteit.",
+      link: "https://www.schumer.nl/product/yamaha-b3-silent/",
+      type: "product",
+      ctaText: "Bekijk details"
+    }
+  ]
+};
+
 export const getPianoRecommendations = async (config: UserConfig): Promise<ConfigResult> => {
   const ai = getAI();
   
   const prompt = `
     Je bent een deskundige piano-adviseur voor "Schumer Piano's & Vleugels".
-    Jouw taak is om 3 specifieke aanbevelingen te doen op basis van de ONDERSTAANDE LIJST MET PRODUCTEN.
-    
-    PRODUCTEN LIJST (GEBRUIK ALLEEN DEZE LINKS):
-    ${PRODUCT_LIST.join('\n')}
-
-    Gebruikersprofiel:
-    - Type instrument: ${config.instrumentType}
-    - Speelniveau: ${config.skillLevel}
-    - Ruimte: ${config.space}
+    Selecteer 3 instrumenten uit de onderstaande lijst die het beste passen bij dit profiel:
+    - Type: ${config.instrumentType}
+    - Niveau: ${config.skillLevel}
     - Budget: ${config.budget}
-    - Conditie: ${config.condition}
     - Prioriteiten: ${config.priorities.join(', ')}
 
-    INSTRUCTIES:
-    1. Selecteer uit de lijst met producten de 3 meest passende instrumenten voor dit profiel.
-    2. Voor elk instrument: Geef de modelnaam, een overtuigende motivatie van 2 zinnen waarom dit bij de klant past, en de URL uit de lijst.
-    3. Antwoord MOET een geldig JSON-object zijn volgens de structuur.
+    LIJST MET PRODUCTEN:
+    ${PRODUCT_LIST.join('\n')}
 
-    JSON STRUCTUUR:
+    Antwoord in JSON formaat met deze velden:
     {
       "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Op basis van uw voorkeuren hebben wij drie bijzondere instrumenten uit onze collectie voor u geselecteerd:",
-      "showShowroomCTA": true,
+      "intro": "...",
       "recommendations": [
-        {
-          "model": "Modelnaam",
-          "motivation": "Motivatie...",
-          "link": "https://www.schumer.nl/product/...",
-          "type": "product",
-          "ctaText": "Bekijk dit model"
-        }
+        { "model": "Modelnaam", "motivation": "2 zinnen waarom dit past", "link": "link uit de lijst", "ctaText": "Bekijk model" }
       ]
     }
   `;
@@ -93,48 +107,24 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
       },
     });
 
-    const text = response.text || "{}";
-    const result: ConfigResult = JSON.parse(text);
+    const result = JSON.parse(response.text || "{}") as ConfigResult;
 
-    // Sanitize links to ensure they are from our allowed list
-    if (result.recommendations) {
-      result.recommendations = result.recommendations.map(rec => {
-        const matchingLink = PRODUCT_LIST.find(l => l.includes(rec.link.split('/product/')[1] || '---')) || rec.link;
-        return { ...rec, link: matchingLink };
-      });
+    // Controleer of we 3 aanbevelingen hebben, anders fallback
+    if (!result.recommendations || result.recommendations.length < 3) {
+      return FALLBACK_RESULTS;
     }
+
+    // Valideer de links
+    result.recommendations = result.recommendations.map(rec => {
+      const match = PRODUCT_LIST.find(url => url.toLowerCase().includes(rec.model.toLowerCase().replace(/\s/g, '-'))) || 
+                    PRODUCT_LIST.find(url => rec.link && url.includes(rec.link.split('/product/')[1])) || 
+                    rec.link;
+      return { ...rec, link: match || "https://www.schumer.nl/producten/", ctaText: rec.ctaText || "Bekijk model" };
+    });
 
     return result;
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    // Secure fallback if AI fails
-    return {
-      title: "Onze selectie voor u",
-      intro: "We hebben drie topmodellen uit onze collectie voor u geselecteerd die aansluiten bij uw wensen:",
-      showShowroomCTA: true,
-      recommendations: [
-        {
-          model: "Yamaha U1 Silent",
-          motivation: "De ideale keuze voor wie de touch van een echte piano zoekt, maar ook in stilte wil kunnen oefenen.",
-          link: "https://www.schumer.nl/product/yamaha-u1-silent/",
-          type: "product",
-          ctaText: "Bekijk dit model"
-        },
-        {
-          model: "Schimmel 174T Vleugel",
-          motivation: "Een prachtige Duitse vleugel met een rijke, warme klank die perfect past in een gemiddelde woonkamer.",
-          link: "https://www.schumer.nl/product/schimmel-174t/",
-          type: "product",
-          ctaText: "Ontdek dit model"
-        },
-        {
-          model: "Yamaha C3X",
-          motivation: "Een concertvleugel-ervaring voor thuis. Onovertroffen in expressie en dynamiek.",
-          link: "https://www.schumer.nl/product/yamaha-c3x/",
-          type: "product",
-          ctaText: "Bekijk details"
-        }
-      ]
-    };
+    console.error("AI Error:", error);
+    return FALLBACK_RESULTS;
   }
 };

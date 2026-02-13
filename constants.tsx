@@ -10,17 +10,29 @@ export const COLORS = {
 };
 
 export const ICONS = {
-  // Step 1: Types
+  // Stap 1: Types (Nu met prominente pianotoetsen)
   AcousticPiano: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M4 10h16v10a2 2 0 01-2 2H6a2 2 0 01-2-2V10z" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M4 10V6a2 2 0 012-2h12a2 2 0 012 2v4M8 10v12M12 10v12M16 10v12" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Piano Body (Upright) */}
+      <path d="M4 3h16v15H4V3z" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Keyboard Area */}
+      <path d="M3 13h18" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Piano Keys (Pianotoetsen) */}
+      <path d="M6 13v5M9 13v5M12 13v5M15 13v5M18 13v5" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Upper Panel details */}
+      <path d="M8 7h8" strokeLinecap="round" strokeLinejoin="round" opacity="0.3"/>
     </svg>
   ),
   GrandPiano: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M3 11c0-3.866 3.134-7 7-7h10v11a4 4 0 01-4 4H7a4 4 0 01-4-4v-4z" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3 11h17M7 19v2M17 19v2" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Iconic Grand Piano Curve */}
+      <path d="M4 12c0-5 4-8 9-8h7v10c0 4-5 5-9 5H4v-7z" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Keyboard Front */}
+      <path d="M4 12h11" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Piano Keys (Pianotoetsen in perspective) */}
+      <path d="M6 12v3M9 12v3M12 12v3" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Grand Piano Lid line */}
+      <path d="M13 4l7 1" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
     </svg>
   ),
   Digital: () => (
@@ -37,31 +49,41 @@ export const ICONS = {
     </svg>
   ),
 
-  // Step 2: Levels
+  // Stap 2: Niveaus (Muzikale voortgang)
   SkillBeginner: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Enkele kwartnoot */}
+      <circle cx="9" cy="17" r="3" />
+      <path d="M12 17V4h4" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
   SkillIntermediate: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Twee achtste noten aan elkaar */}
+      <circle cx="6" cy="17" r="3" />
+      <circle cx="16" cy="15" r="3" />
+      <path d="M9 17V6l10-2v11" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9 10l10-2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
   SkillAdvanced: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M5 3v18l15-9L5 3z" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M9 7v10l8-5-8-5z" fill="currentColor" fillOpacity="0.2" />
+      {/* G-sleutel (Treble Clef) */}
+      <path d="M12 21V3c0 0-4 1-4 4s4 2 4 5-4 3-4 6 4 3 4 3z" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M12 12c4 0 4-3 4-5s-4-2-4-2" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="9" cy="18" r="1" />
     </svg>
   ),
   SkillProfessional: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M12 15l-2 5L3 7l9 2 9-2-7 13-2-5z" strokeLinecap="round" strokeLinejoin="round"/>
-      <circle cx="12" cy="12" r="3" />
+      {/* Lier / Klassiek symbool voor meesterschap */}
+      <path d="M6 4v12c0 3.3 2.7 6 6 6s6-2.7 6-6V4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M6 8h12M6 12h12M12 4v18" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18 4c2 0 3 1 3 3s-1 3-3 3M6 4C4 4 3 5 3 7s1 3 3 3" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
 
-  // Step 3: Space
+  // Stap 3: Ruimte
   SpaceSmall: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
       <rect x="7" y="3" width="10" height="18" rx="2" />
@@ -80,11 +102,13 @@ export const ICONS = {
     </svg>
   ),
 
-  // Step 4: Budget
+  // Stap 4: Budget
   Money1: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 8v8M9 12h6" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Portemonnee / Instapbudget */}
+      <path d="M20 12V8H6a2 2 0 01-2-2V5" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M4 6v12a2 2 0 002 2h14v-4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M18 12h2a2 2 0 012 2v2a2 2 0 01-2 2h-2v-6z" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
   Money2: () => (
@@ -96,8 +120,10 @@ export const ICONS = {
   ),
   Money3: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M12 6V3m4.24 4.24l2.12-2.12M18 12h3m-4.24 4.24l2.12 2.12M12 18v3m-4.24-4.24l-2.12 2.12M6 12H3m4.24-4.24L5.12 5.12" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="5" />
+      {/* Stapel bankbiljetten / Premium budget */}
+      <rect x="4" y="8" width="16" height="10" rx="1" />
+      <path d="M2 12h2M20 12h2M4 6h16M6 4h12" strokeLinecap="round" strokeLinejoin="round" opacity="0.4"/>
+      <circle cx="12" cy="13" r="2" />
     </svg>
   ),
   Money4: () => (
@@ -107,7 +133,7 @@ export const ICONS = {
     </svg>
   ),
 
-  // Step 5: Condition
+  // Stap 5: Conditie
   ConditionNew: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
       <path d="M12 3l2.45 5.51L20.5 9.34l-4.69 4.14 1.45 6.03L12 16.27l-5.26 3.24 1.45-6.03L3.5 9.34l6.05-.83L12 3z" strokeLinecap="round" strokeLinejoin="round"/>
@@ -120,15 +146,15 @@ export const ICONS = {
   ),
   Sparkle: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
-      <path d="M12 3l1.45 4.51h4.74l-3.84 2.78 1.45 4.51L12 11.92l-3.8 2.88 1.45-4.51-3.84-2.78h4.74L12 3z" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* 'Maakt niet uit' - Open ster of kruisende pijlen voor flexibiliteit */}
+      <path d="M8 7h12m0 0l-4-4m4 4l-4 4M16 17H4m0 0l4-4m-4 4l4 4" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
 
-  // Step 6: Priorities
+  // Stap 6: Priorities
   Warm: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zM12 14c-4.42 0-8 2.58-8 6v2h16v-2c0-3.42-3.58-6-8-6z" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M12 8v4M12 12l2 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   ),
   Bright: () => (

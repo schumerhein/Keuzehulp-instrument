@@ -9,7 +9,6 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
-  // Enhanced loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fadeIn">
@@ -20,37 +19,24 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
         <h2 className="text-2xl font-serif text-gray-800 italic text-center mb-2">
           Uw advies wordt voorbereid...
         </h2>
-        <p className="text-gray-400 text-sm">We matchen uw wensen aan onze collectie op schumer.nl</p>
+        <p className="text-gray-400 text-sm">We matchen uw wensen aan onze actuele collectie</p>
       </div>
     );
   }
 
-  // Final safety check: if everything fails, show a minimal fallback UI instead of nothing
-  const displayResults = results || {
-    title: "Onze aanbevelingen",
-    intro: "Er is een fout opgetreden bij het laden, maar we adviseren u graag een van onze topmodellen:",
-    recommendations: [
-      {
-        model: "Yamaha U1 Silent",
-        motivation: "Een van de meest verkochte piano's ter wereld, nu met het geavanceerde Silent systeem.",
-        link: "https://www.schumer.nl/product/yamaha-u1-silent/",
-        type: "product",
-        ctaText: "Bekijk model"
-      }
-    ]
-  };
+  if (!results) return null;
 
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">{displayResults.title}</h2>
+        <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">{results.title}</h2>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-          {displayResults.intro}
+          {results.intro}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {displayResults.recommendations.map((rec, idx) => (
+        {results.recommendations.map((rec, idx) => (
           <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
             <h3 className="text-xl font-serif text-gray-900 mb-3">{rec.model}</h3>
             <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-grow">
@@ -62,7 +48,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
               rel="noopener noreferrer"
               className="block text-center py-3 px-4 rounded-xl bg-schumer-dark text-white text-sm font-bold hover:bg-black transition-colors"
             >
-              {rec.ctaText}
+              {rec.ctaText || "Bekijk model"}
             </a>
           </div>
         ))}
