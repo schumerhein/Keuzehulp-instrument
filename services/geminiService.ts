@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserConfig, ConfigResult, GroundingSource } from "../types";
+import { UserConfig, ConfigResult } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -55,17 +55,17 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     ${PRODUCT_LIST.join('\n')}
 
     Gebruikersprofiel:
-    - Type instrument: ${config.instrumentType === 'acoustic' ? 'Akoestische piano' : config.instrumentType}
+    - Type instrument: ${config.instrumentType}
     - Speelniveau: ${config.skillLevel}
     - Ruimte: ${config.space}
     - Budget: ${config.budget}
-    - Conditie: ${config.condition === 'new' ? 'Nieuw' : config.condition === 'used' ? 'Tweedehands' : 'Nieuw of tweedehands'}
+    - Conditie: ${config.condition}
     - Prioriteiten: ${config.priorities.join(', ')}
 
     INSTRUCTIES:
     1. Selecteer uit de lijst met producten de 3 meest passende instrumenten voor dit profiel.
     2. Voor elk instrument: Geef de modelnaam, een overtuigende motivatie van 2 zinnen waarom dit bij de klant past, en de URL uit de lijst.
-    3. Antwoord MOET een geldig JSON-object zijn.
+    3. Antwoord MOET een geldig JSON-object zijn volgens de structuur.
 
     JSON STRUCTUUR:
     {
@@ -86,28 +86,28 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-pro-preview",
+      model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        tools: [{ googleSearch: {} }],
+        responseMimeType: "application/json",
       },
     });
 
-    const text = response.text || "";
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Geen JSON gevonden");
-    
-    const result: ConfigResult = JSON.parse(jsonMatch[0]);
+    const text = response.text || "{}";
+    const result: ConfigResult = JSON.parse(text);
 
-    // Ensure all links returned are valid links from our list
-    result.recommendations = result.recommendations.map(rec => {
-      const validLink = PRODUCT_LIST.find(l => rec.link.includes(l.split('/product/')[1])) || rec.link;
-      return { ...rec, link: validLink };
-    });
+    // Sanitize links to ensure they are from our allowed list
+    if (result.recommendations) {
+      result.recommendations = result.recommendations.map(rec => {
+        const matchingLink = PRODUCT_LIST.find(l => l.includes(rec.link.split('/product/')[1] || '---')) || rec.link;
+        return { ...rec, link: matchingLink };
+      });
+    }
 
     return result;
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("Gemini API Error:", error);
+    // Secure fallback if AI fails
     return {
       title: "Onze selectie voor u",
       intro: "We hebben drie topmodellen uit onze collectie voor u geselecteerd die aansluiten bij uw wensen:",
