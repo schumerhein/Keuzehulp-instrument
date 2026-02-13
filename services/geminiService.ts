@@ -4,45 +4,50 @@ import { UserConfig, ConfigResult } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const PRODUCT_LIST = [
-  "https://www.schumer.nl/product/yamaha-b3-silent/",
-  "https://www.schumer.nl/product/w-hoffmann-190/",
-  "https://www.schumer.nl/product/c-bechstein-b203-2/",
-  "https://www.schumer.nl/product/yamaha-c3/",
-  "https://www.schumer.nl/product/yamaha-u3-silent/",
-  "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/",
-  "https://www.schumer.nl/product/schimmel-174t/",
-  "https://www.schumer.nl/product/schimmel-208t/",
-  "https://www.schumer.nl/product/bluthner/",
-  "https://www.schumer.nl/product/c-bechstein/",
-  "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/",
-  "https://www.schumer.nl/product/boston-156/",
-  "https://www.schumer.nl/product/romhildt/",
-  "https://www.schumer.nl/product/yamaha-p121/",
-  "https://www.schumer.nl/product/yamaha-u1-2/",
-  "https://www.schumer.nl/product/yamaha-u1-silent/",
-  "https://www.schumer.nl/product/yamaha-b3-silent-2/",
-  "https://www.schumer.nl/product/wilh-steinberg-118/",
-  "https://www.schumer.nl/product/schumer-up-117m/",
-  "https://www.schumer.nl/product/grotrian-steinweg-4/",
-  "https://www.schumer.nl/product/petrof-118-g1/",
-  "https://www.schumer.nl/product/eterna-er10/",
-  "https://www.schumer.nl/product/yamaha-p121t-silent/",
-  "https://www.schumer.nl/product/eterna-er30/",
-  "https://www.schumer.nl/product/seiler-116/",
-  "https://www.schumer.nl/product/rameau/",
-  "https://www.schumer.nl/product/yamaha-su-118c/",
-  "https://www.schumer.nl/product/schumer-up-118m/",
-  "https://www.schumer.nl/product/schimmel-130t/",
-  "https://www.schumer.nl/product/ritmuller-up-177-m/",
+const UPRIGHT_PIANOS = [
+  "https://www.schumer.nl/product/wilh-steinberg/",
+  "https://www.schumer.nl/product/schimmel-c-130t/",
   "https://www.schumer.nl/product/yamaha-su-118-c-2/",
-  "https://www.schimmel-c-130t/",
-  "https://www.schumer.nl/product/steinway-sons-b211-2/",
-  "https://www.schumer.nl/product/george-steck/",
-  "https://www.schumer.nl/product/yamaha-c3x/",
-  "https://www.schumer.nl/product/bosendorfer-200/",
-  "https://www.schumer.nl/product/wilh-steinberg/"
+  "https://www.schumer.nl/product/ritmuller-up-177-m/",
+  "https://www.schumer.nl/product/schimmel-130t/",
+  "https://www.schumer.nl/product/schumer-up-118m/",
+  "https://www.schumer.nl/product/yamaha-su-118c/",
+  "https://www.schumer.nl/product/rameau/",
+  "https://www.schumer.nl/product/seiler-116/",
+  "https://www.schumer.nl/product/eterna-er30/",
+  "https://www.schumer.nl/product/yamaha-p121t-silent/",
+  "https://www.schumer.nl/product/eterna-er10/",
+  "https://www.schumer.nl/product/petrof-118-g1/",
+  "https://www.schumer.nl/product/grotrian-steinweg-4/",
+  "https://www.schumer.nl/product/schumer-up-117m/",
+  "https://www.schumer.nl/product/wilh-steinberg-118/",
+  "https://www.schumer.nl/product/yamaha-b3-silent-2/",
+  "https://www.schumer.nl/product/yamaha-u1-silent/",
+  "https://www.schumer.nl/product/yamaha-u1-2/",
+  "https://www.schumer.nl/product/yamaha-p121/",
+  "https://www.schumer.nl/product/romhildt/",
+  "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/",
+  "https://www.schumer.nl/product/yamaha-u3-silent/",
+  "https://www.schumer.nl/product/yamaha-b3-silent/"
 ];
+
+const VLEUGEL_PIANOS = [
+  "https://www.schumer.nl/product/bosendorfer-200/",
+  "https://www.schumer.nl/product/yamaha-c3x/",
+  "https://www.schumer.nl/product/george-steck/",
+  "https://www.schumer.nl/product/steinway-sons-b211-2/",
+  "https://www.schumer.nl/product/boston-156/",
+  "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/",
+  "https://www.schumer.nl/product/c-bechstein/",
+  "https://www.schumer.nl/product/bluthner/",
+  "https://www.schumer.nl/product/schimmel-208t/",
+  "https://www.schumer.nl/product/schimmel-174t/",
+  "https://www.schumer.nl/product/yamaha-c3/",
+  "https://www.schumer.nl/product/c-bechstein-b203-2/",
+  "https://www.schumer.nl/product/w-hoffmann-190/"
+];
+
+const ALL_PRODUCTS = [...UPRIGHT_PIANOS, ...VLEUGEL_PIANOS];
 
 const FALLBACK_RESULTS: ConfigResult = {
   title: "Onze aanbevelingen voor u",
@@ -50,22 +55,22 @@ const FALLBACK_RESULTS: ConfigResult = {
   showShowroomCTA: true,
   recommendations: [
     {
-      model: "Yamaha U1 Silent",
-      motivation: "De absolute referentie voor de moderne pianist. Het Silent systeem laat u elk moment van de dag oefenen met een prachtige digitale klank via de hoofdtelefoon.",
-      link: "https://www.schumer.nl/product/yamaha-u1-silent/",
+      model: "Yamaha U1 Professional",
+      motivation: "De absolute referentie voor de moderne pianist. Bekend om zijn heldere klank en ongekende betrouwbaarheid.",
+      link: "https://www.schumer.nl/product/yamaha-u1-2/",
       type: "product",
       ctaText: "Bekijk model"
     },
     {
       model: "Schimmel 174T Vleugel",
-      motivation: "Een karaktervolle Duitse vleugel met een rijke, zingende toon. De perfecte keuze voor de pianist die droomt van de ultieme speelervaring in de woonkamer.",
+      motivation: "Een karaktervolle Duitse vleugel met een rijke, zingende toon. De perfecte keuze voor de ultieme speelervaring.",
       link: "https://www.schumer.nl/product/schimmel-174t/",
       type: "product",
       ctaText: "Ontdek vleugel"
     },
     {
       model: "Yamaha B3 Silent",
-      motivation: "De ideale gezins-piano met professionele prestaties. Dankzij het grotere klankbord heeft dit model een verrassend diepe en volle klank.",
+      motivation: "De ideale gezins-piano met professionele prestaties. Dankzij het Silent systeem kunt u op elk moment van de dag oefenen.",
       link: "https://www.schumer.nl/product/yamaha-b3-silent/",
       type: "product",
       ctaText: "Bekijk details"
@@ -76,37 +81,50 @@ const FALLBACK_RESULTS: ConfigResult = {
 export const getPianoRecommendations = async (config: UserConfig): Promise<ConfigResult> => {
   const ai = getAI();
   
+  // Select the appropriate list based on instrument type
+  let relevantUrls: string[] = [];
+  if (config.instrumentType === 'acoustic') {
+    relevantUrls = UPRIGHT_PIANOS;
+  } else if (config.instrumentType === 'vleugel') {
+    relevantUrls = VLEUGEL_PIANOS;
+  } else {
+    relevantUrls = ALL_PRODUCTS;
+  }
+
   const prompt = `
     Je bent een senior piano-adviseur bij Schumer Piano's & Vleugels.
-    Op basis van de onderstaande selectie van de klant moet je exact 3 piano's of vleugels kiezen uit de verstrekte lijst.
+    De klant heeft gekozen voor type: ${config.instrumentType}.
+    
+    Op basis van de onderstaande selectie van de klant moet je exact 3 instrumenten kiezen uit de verstrekte lijst.
     
     KLANTPROFIEL:
-    - Instrument: ${config.instrumentType} (akoestisch, vleugel of digitaal)
+    - Gekozen categorie: ${config.instrumentType}
     - Niveau: ${config.skillLevel}
     - Budget: ${config.budget}
     - Prioriteiten: ${config.priorities.join(', ')}
 
     LIJST MET BESCHIKBARE PRODUCTEN (URLS):
-    ${PRODUCT_LIST.join('\n')}
+    ${relevantUrls.join('\n')}
 
     GEEF ANTWOORD IN DIT JSON FORMAAT:
     {
       "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Een korte inleidende zin die de klant complimenteert met hun keuzes.",
+      "intro": "Een korte inleidende zin die de klant complimenteert met hun interesse in een ${config.instrumentType === 'vleugel' ? 'vleugel' : 'piano'}.",
       "recommendations": [
         {
           "model": "Volledige Naam van Model",
-          "motivation": "Max 2 zinnen waarom dit instrument perfect past bij hun ${config.skillLevel} niveau en budget van ${config.budget}.",
-          "link": "DE EXACTE URL UIT DE LIJST",
+          "motivation": "Max 2 zinnen waarom dit instrument perfect past bij hun ${config.skillLevel} niveau en budget van ${config.budget}. Noem eventueel de klank of het formaat.",
+          "link": "DE EXACTE URL UIT DE BOVENSTAANDE LIJST",
           "ctaText": "Bekijk model"
         }
       ]
     }
 
-    BELANGRIJK: 
-    1. Kies alleen instrumenten die passen bij het budget.
-    2. Als ze een vleugel zoeken, kies dan bij voorkeur urls waar 'vleugel' of specifieke vleugelmodellen (C3, B211, 174T, 208T, 200) in staan.
-    3. Zorg dat de motivatie deskundig en warm overkomt.
+    STRIKTE REGELS: 
+    1. Kies ONLY 3 instrumenten uit de verstrekte lijst.
+    2. Als de klant een 'vleugel' heeft geselecteerd, mag je NOOIT een staande piano aanraden.
+    3. Als de klant een 'acoustic' piano heeft geselecteerd, mag je NOOIT een vleugel aanraden.
+    4. Zorg dat de link exact overeenkomt met een link uit de lijst.
   `;
 
   try {
@@ -125,17 +143,15 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
       return FALLBACK_RESULTS;
     }
 
-    // Double check that we have 3 results and valid links
-    if (result.recommendations.length > 3) {
-      result.recommendations = result.recommendations.slice(0, 3);
-    }
-    
-    // Safety check for links
-    result.recommendations = result.recommendations.map(rec => ({
-      ...rec,
-      link: PRODUCT_LIST.includes(rec.link) ? rec.link : "https://www.schumer.nl/producten/",
-      ctaText: rec.ctaText || "Bekijk model"
-    }));
+    // Safety check to ensure we stay within the chosen category if AI hallucinated
+    result.recommendations = result.recommendations.map(rec => {
+      const isValidLink = ALL_PRODUCTS.includes(rec.link);
+      return {
+        ...rec,
+        link: isValidLink ? rec.link : (relevantUrls[0] || ALL_PRODUCTS[0]),
+        ctaText: rec.ctaText || "Bekijk model"
+      };
+    }).slice(0, 3);
 
     return result;
   } catch (error) {
