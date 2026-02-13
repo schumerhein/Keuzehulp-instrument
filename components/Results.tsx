@@ -9,17 +9,26 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
-  if (isLoading) {
+  // If we are loading OR we don't have results yet (and are still in the process)
+  if (isLoading || (!results && !isLoading)) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 animate-fadeIn">
-        <div className="relative w-20 h-20 mb-8">
-          <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
-          <div className="absolute inset-0 border-4 border-schumer-red border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex flex-col items-center justify-center py-20 animate-fadeIn min-h-[400px]">
+        <div className="relative w-24 h-24 mb-10">
+          {/* Static outer ring */}
+          <div className="absolute inset-0 border-[6px] border-gray-100 rounded-full"></div>
+          {/* Animated inner ring */}
+          <div className="absolute inset-0 border-[6px] border-schumer-red border-t-transparent rounded-full animate-spin"></div>
+          {/* Inner pulse */}
+          <div className="absolute inset-4 bg-schumer-red/5 rounded-full animate-pulse"></div>
         </div>
-        <h2 className="text-2xl font-serif text-gray-800 italic text-center mb-2">
-          Uw advies wordt voorbereid...
-        </h2>
-        <p className="text-gray-400 text-sm">We matchen uw wensen aan onze actuele collectie</p>
+        <div className="text-center">
+          <h2 className="text-2xl font-serif text-gray-900 italic mb-3">
+            Uw advies wordt voorbereid...
+          </h2>
+          <p className="text-gray-400 text-sm font-medium max-w-xs mx-auto leading-relaxed">
+            We analyseren uw voorkeuren en matchen deze met onze collectie meesterwerken.
+          </p>
+        </div>
       </div>
     );
   }
@@ -38,7 +47,10 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
         {results.recommendations.map((rec, idx) => (
           <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
-            <h3 className="text-xl font-serif text-gray-900 mb-3">{rec.model}</h3>
+            <div className="mb-4">
+              <span className="text-[10px] uppercase tracking-widest text-schumer-red font-bold">Aanbevolen model</span>
+              <h3 className="text-xl font-serif text-gray-900 mt-1">{rec.model}</h3>
+            </div>
             <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-grow">
               {rec.motivation}
             </p>
@@ -46,7 +58,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
               href={rec.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-center py-3 px-4 rounded-xl bg-schumer-dark text-white text-sm font-bold hover:bg-black transition-colors"
+              className="block text-center py-4 px-4 rounded-xl bg-schumer-dark text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl active:scale-95 transform transition-transform"
             >
               {rec.ctaText || "Bekijk model"}
             </a>
@@ -58,7 +70,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
         <div className="z-10 max-w-lg">
           <h3 className="text-2xl md:text-3xl font-serif mb-4">Ervaar het zelf</h3>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen.
+            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen. De koffie staat voor u klaar.
           </p>
         </div>
         <div className="z-10 flex flex-col sm:flex-row gap-4 shrink-0 w-full sm:w-auto">
@@ -66,7 +78,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
             href="https://www.schumer.nl/contact/"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-8 py-4 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-center text-sm"
+            className="px-8 py-4 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-center text-sm shadow-xl"
           >
             Plan showroomafspraak
           </a>
@@ -83,9 +95,9 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
       <div className="mt-16 text-center">
         <button 
           onClick={onReset}
-          className="text-gray-400 hover:text-schumer-red font-bold flex items-center justify-center mx-auto gap-2 text-xs uppercase tracking-widest transition-colors"
+          className="text-gray-400 hover:text-schumer-red font-bold flex items-center justify-center mx-auto gap-2 text-xs uppercase tracking-widest transition-colors group"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 transition-transform group-hover:rotate-180 duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
           </svg>
           Opnieuw beginnen

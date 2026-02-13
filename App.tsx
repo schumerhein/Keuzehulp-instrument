@@ -1,8 +1,8 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Step from './components/Step';
 import Results from './components/Results';
-import { ICONS, COLORS } from './constants';
+import { ICONS } from './constants';
 import { UserConfig, ConfigResult, InstrumentType, SkillLevel, Space, Budget, Condition, Priority } from './types';
 import { getPianoRecommendations } from './services/geminiService';
 
@@ -11,15 +11,49 @@ const App: React.FC = () => {
   const [isFinishing, setIsFinishing] = useState(false);
   const [results, setResults] = useState<ConfigResult | null>(null);
   const [config, setConfig] = useState<UserConfig>({
-    instrumentType: 'acoustic', // First option selected by default
-    skillLevel: 'beginner',      // First option selected by default
-    space: 'small',              // First option selected by default
-    budget: '1-3k',              // First option selected by default
-    condition: 'new',            // First option selected by default
-    priorities: ['warm_sound'],  // First priority selected by default
+    instrumentType: 'acoustic',
+    skillLevel: 'beginner',
+    space: 'small',
+    budget: '1-3k',
+    condition: 'new',
+    priorities: ['warm_sound'],
   });
 
   const totalSteps = 6;
+
+  // Triggered when user finishes the last step
+  const handleFinish = () => {
+    setCurrentStep(totalSteps);
+  };
+
+  // Fetch data when we reach the result step
+  useEffect(() => {
+    if (currentStep === totalSteps && !results && !isFinishing) {
+      const fetchResults = async () => {
+        setIsFinishing(true);
+        const startTime = Date.now();
+        
+        try {
+          const data = await getPianoRecommendations(config);
+          
+          // Ensure the loader is visible for at least 1.8s for premium feel
+          const elapsedTime = Date.now() - startTime;
+          const minDelay = 1800;
+          if (elapsedTime < minDelay) {
+            await new Promise(r => setTimeout(r, minDelay - elapsedTime));
+          }
+          
+          setResults(data);
+        } catch (e) {
+          console.error("Error fetching piano advice:", e);
+        } finally {
+          setIsFinishing(false);
+        }
+      };
+      
+      fetchResults();
+    }
+  }, [currentStep, totalSteps, results, isFinishing, config]);
 
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
@@ -32,19 +66,6 @@ const App: React.FC = () => {
   const handleBack = () => {
     if (currentStep > 0) {
       setCurrentStep(prev => prev - 1);
-    }
-  };
-
-  const handleFinish = async () => {
-    setCurrentStep(totalSteps);
-    setIsFinishing(true);
-    try {
-      const data = await getPianoRecommendations(config);
-      setResults(data);
-    } catch (e) {
-      console.error("Fout bij ophalen advies", e);
-    } finally {
-      setIsFinishing(false);
     }
   };
 
@@ -64,8 +85,9 @@ const App: React.FC = () => {
   };
 
   const reset = () => {
-    setCurrentStep(0);
     setResults(null);
+    setIsFinishing(false);
+    setCurrentStep(0);
     setConfig({
       instrumentType: 'acoustic',
       skillLevel: 'beginner',
@@ -78,10 +100,8 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center py-4 sm:py-10 px-4" style={{ backgroundColor: '#FFFFFF' }}>
-      {/* Main Container: Distinct shadow and border to pop on white blog pages */}
       <div className="w-full max-w-4xl bg-white rounded-3xl shadow-[0_10px_50px_rgba(0,0,0,0.08)] border border-gray-100 overflow-hidden flex flex-col">
         
-        {/* Header */}
         <header className="bg-white border-b border-gray-100 py-6 px-6 md:px-10">
           <div className="flex items-center justify-between">
             <div className="flex flex-col">
@@ -96,7 +116,6 @@ const App: React.FC = () => {
           </div>
         </header>
 
-        {/* Progress Bar */}
         {currentStep < totalSteps && (
           <div className="w-full h-1 bg-gray-50">
             <div 
@@ -106,7 +125,6 @@ const App: React.FC = () => {
           </div>
         )}
 
-        {/* Main Content */}
         <main className="flex-grow p-6 md:p-12">
           <div className="w-full max-w-3xl mx-auto">
             {currentStep === 0 && (
@@ -221,7 +239,6 @@ const App: React.FC = () => {
               />
             )}
 
-            {/* Navigation */}
             {currentStep > 0 && currentStep < totalSteps && (
               <div className="mt-10 flex justify-center">
                 <button 
@@ -238,7 +255,6 @@ const App: React.FC = () => {
           </div>
         </main>
 
-        {/* Footer / USPs: Subtle background to separate from the white content */}
         <footer className="py-10 px-6 md:px-12 border-t border-gray-50 bg-gray-50/50">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="flex flex-col items-center group">
