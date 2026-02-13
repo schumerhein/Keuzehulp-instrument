@@ -9,16 +9,13 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
-  // If we are loading OR we don't have results yet (and are still in the process)
-  if (isLoading || (!results && !isLoading)) {
+  // Explicitly show loader only when loading is true
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fadeIn min-h-[400px]">
         <div className="relative w-24 h-24 mb-10">
-          {/* Static outer ring */}
           <div className="absolute inset-0 border-[6px] border-gray-100 rounded-full"></div>
-          {/* Animated inner ring */}
           <div className="absolute inset-0 border-[6px] border-schumer-red border-t-transparent rounded-full animate-spin"></div>
-          {/* Inner pulse */}
           <div className="absolute inset-4 bg-schumer-red/5 rounded-full animate-pulse"></div>
         </div>
         <div className="text-center">
@@ -33,7 +30,26 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
     );
   }
 
-  if (!results) return null;
+  // Handle case where loading is finished but results are still missing
+  if (!results) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
+        <div className="text-schumer-red mb-6">
+          <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h2 className="text-2xl font-serif text-gray-900 mb-4">Er ging iets mis</h2>
+        <p className="text-gray-500 mb-8 max-w-sm">We konden op dit moment geen verbinding maken met onze adviseur. Probeert u het nog eens?</p>
+        <button 
+          onClick={onReset}
+          className="px-8 py-3 bg-schumer-dark text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-black transition-colors"
+        >
+          Opnieuw proberen
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto">

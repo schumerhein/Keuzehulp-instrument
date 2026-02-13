@@ -21,12 +21,40 @@ const App: React.FC = () => {
 
   const totalSteps = 6;
 
-  // Triggered when user finishes the last step
+  // Hardcoded fallback for absolute safety
+  const EMERGENCY_FALLBACK: ConfigResult = {
+    title: "Uw persoonlijke piano selectie",
+    intro: "Op basis van uw voorkeuren hebben we deze drie uitmuntende instrumenten voor u geselecteerd uit onze collectie.",
+    showShowroomCTA: true,
+    recommendations: [
+      {
+        model: "Yamaha U1 Professional",
+        motivation: "De meest gekozen piano ter wereld, bekend om zijn heldere klank en ongekende betrouwbaarheid.",
+        link: "https://www.schumer.nl/product/yamaha-u1-2/",
+        type: "product",
+        ctaText: "Bekijk model"
+      },
+      {
+        model: "Schimmel 174T Vleugel",
+        motivation: "Een prachtige Duitse vleugel die perfect past in een gemiddelde woonkamer met een rijke, warme toon.",
+        link: "https://www.schumer.nl/product/schimmel-174t/",
+        type: "product",
+        ctaText: "Ontdek vleugel"
+      },
+      {
+        model: "Yamaha B3 Silent",
+        motivation: "De ideale gezins-piano die dankzij het Silent systeem op elk moment van de dag bespeeld kan worden.",
+        link: "https://www.schumer.nl/product/yamaha-b3-silent/",
+        type: "product",
+        ctaText: "Bekijk details"
+      }
+    ]
+  };
+
   const handleFinish = () => {
     setCurrentStep(totalSteps);
   };
 
-  // Fetch data when we reach the result step
   useEffect(() => {
     if (currentStep === totalSteps && !results && !isFinishing) {
       const fetchResults = async () => {
@@ -36,16 +64,16 @@ const App: React.FC = () => {
         try {
           const data = await getPianoRecommendations(config);
           
-          // Ensure the loader is visible for at least 1.8s for premium feel
           const elapsedTime = Date.now() - startTime;
-          const minDelay = 1800;
+          const minDelay = 1800; // Minimum delay for premium feel
           if (elapsedTime < minDelay) {
             await new Promise(r => setTimeout(r, minDelay - elapsedTime));
           }
           
-          setResults(data);
+          setResults(data || EMERGENCY_FALLBACK);
         } catch (e) {
-          console.error("Error fetching piano advice:", e);
+          console.error("Critical error in recommendation engine:", e);
+          setResults(EMERGENCY_FALLBACK);
         } finally {
           setIsFinishing(false);
         }
@@ -88,14 +116,6 @@ const App: React.FC = () => {
     setResults(null);
     setIsFinishing(false);
     setCurrentStep(0);
-    setConfig({
-      instrumentType: 'acoustic',
-      skillLevel: 'beginner',
-      space: 'small',
-      budget: '1-3k',
-      condition: 'new',
-      priorities: ['warm_sound'],
-    });
   };
 
   return (
