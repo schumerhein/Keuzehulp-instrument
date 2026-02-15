@@ -29,6 +29,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
     );
   }
 
+  // Als er na het laden geen resultaten zijn, tonen we een vriendelijke fallback
   if (!results) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
@@ -37,19 +38,27 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-serif text-gray-900 mb-4">Er ging iets mis</h2>
-        <p className="text-gray-500 mb-8 max-w-sm">We konden op dit moment geen verbinding maken met onze adviseur. Probeert u het nog eens?</p>
-        <button 
-          onClick={onReset}
-          className="px-8 py-3 bg-schumer-dark text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-black transition-colors"
-        >
-          Opnieuw proberen
-        </button>
+        <h2 className="text-2xl font-serif text-gray-900 mb-4">Er ging iets mis bij het laden</h2>
+        <p className="text-gray-500 mb-8 max-w-sm">Onze digitale adviseur is even niet bereikbaar. Probeert u het nog eens, of neem direct contact met ons op.</p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button 
+            onClick={onReset}
+            className="px-8 py-3 bg-schumer-dark text-white rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-black transition-colors"
+          >
+            Opnieuw proberen
+          </button>
+          <a 
+            href="https://www.schumer.nl/contact/"
+            className="px-8 py-3 border border-gray-200 text-gray-600 rounded-xl font-bold uppercase tracking-widest text-xs hover:bg-gray-50 transition-colors"
+          >
+            Contact opnemen
+          </a>
+        </div>
       </div>
     );
   }
 
-  const hasRecommendations = results.recommendations.length > 0;
+  const hasRecommendations = results.recommendations && results.recommendations.length > 0;
 
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto">
@@ -61,7 +70,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
       </div>
 
       {hasRecommendations ? (
-        <div className={`grid grid-cols-1 md:grid-cols-${results.recommendations.length} gap-6 mb-12 max-w-4xl mx-auto`}>
+        <div className={`grid grid-cols-1 md:grid-cols-${Math.min(results.recommendations.length, 3)} gap-6 mb-12 max-w-4xl mx-auto`}>
           {results.recommendations.map((rec, idx) => (
             <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
               <div className="mb-4">
@@ -91,7 +100,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
            </div>
            <h3 className="text-xl font-serif mb-3">Persoonlijke ondersteuning</h3>
            <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
-              Voor uw specifieke wensen of digitale instrumenten adviseren wij u graag persoonlijk. Zo kunnen we samen kijken naar de actuele voorraad of alternatieve oplossingen op maat.
+              Voor uw specifieke wensen adviseren wij u graag persoonlijk. Zo kunnen we samen kijken naar de actuele voorraad of alternatieve oplossingen op maat die perfect bij u passen.
            </p>
         </div>
       )}

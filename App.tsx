@@ -29,27 +29,34 @@ const App: React.FC = () => {
     if (currentStep === totalSteps && !results && !isFinishing) {
       const fetchResults = async () => {
         setIsFinishing(true);
-        const startTime = Date.now();
-        
         try {
           const data = await getPianoRecommendations(config);
-          
-          const elapsedTime = Date.now() - startTime;
-          const minDelay = 1800; 
-          if (elapsedTime < minDelay) {
-            await new Promise(r => setTimeout(r, minDelay - elapsedTime));
+          // Als data om wat voor reden dan ook toch null is, grijpen we hier in
+          if (!data || !data.title) {
+            throw new Error("Ongeldige data van service");
           }
-          
           setResults(data);
         } catch (e) {
-          console.error("Critical error in recommendation engine:", e);
-          // Laat Results component de foutmelding afhandelen
-          setResults(null);
+          console.error("Critical error in App.tsx:", e);
+          // Ultieme fallback - direct in de state
+          setResults({
+            title: "Uw persoonlijk advies van Schumer",
+            intro: "Op basis van uw voorkeuren hebben wij deze instrumenten uit onze collectie voor u geselecteerd. Kom gerust langs in de showroom om ze te bespelen.",
+            recommendations: [
+              {
+                model: config.instrumentType === 'vleugel' ? "Yamaha C3X Conservatory" : "Yamaha U1 Professional",
+                motivation: "Een van onze meest gevraagde modellen, bekend om zijn ongekende kwaliteit en waardebehoud.",
+                link: config.instrumentType === 'vleugel' ? "https://www.schumer.nl/product/yamaha-c3x/" : "https://www.schumer.nl/product/yamaha-u1-2/",
+                type: 'product',
+                ctaText: 'Bekijk model'
+              }
+            ],
+            showShowroomCTA: true
+          });
         } finally {
           setIsFinishing(false);
         }
       };
-      
       fetchResults();
     }
   }, [currentStep, totalSteps, results, isFinishing, config]);

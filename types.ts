@@ -23,15 +23,18 @@ export interface Recommendation {
   ctaText: string;
 }
 
-export interface GroundingSource {
-  title: string;
-  uri: string;
-}
-
 export interface ConfigResult {
   title: string;
   intro: string;
   recommendations: Recommendation[];
   showShowroomCTA: boolean;
-  sources?: GroundingSource[];
+}
+
+export interface PianoProduct {
+  name: string;
+  url: string;
+  priceRange: Budget;
+  isSilent: boolean;
+  condition: 'new' | 'used';
+  type: 'acoustic' | 'vleugel';
 }
