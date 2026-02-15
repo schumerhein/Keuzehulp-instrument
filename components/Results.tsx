@@ -9,7 +9,6 @@ interface ResultsProps {
 }
 
 const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
-  // Explicitly show loader only when loading is true
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fadeIn min-h-[400px]">
@@ -30,7 +29,6 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
     );
   }
 
-  // Handle case where loading is finished but results are still missing
   if (!results) {
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-fadeIn text-center">
@@ -51,60 +49,79 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
     );
   }
 
+  const isDigitalCase = results.recommendations.length === 0;
+
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-serif text-gray-900 mb-4">{results.title}</h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
           {results.intro}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {results.recommendations.map((rec, idx) => (
-          <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
-            <div className="mb-4">
-              <span className="text-[10px] uppercase tracking-widest text-schumer-red font-bold">Aanbevolen model</span>
-              <h3 className="text-xl font-serif text-gray-900 mt-1">{rec.model}</h3>
+      {!isDigitalCase ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {results.recommendations.map((rec, idx) => (
+            <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
+              <div className="mb-4">
+                <span className="text-[10px] uppercase tracking-widest text-schumer-red font-bold">Aanbevolen model</span>
+                <h3 className="text-xl font-serif text-gray-900 mt-1">{rec.model}</h3>
+              </div>
+              <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-grow">
+                {rec.motivation}
+              </p>
+              <a
+                href={rec.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-center py-4 px-4 rounded-xl bg-schumer-dark text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl active:scale-95 transform transition-transform"
+              >
+                {rec.ctaText || "Bekijk model"}
+              </a>
             </div>
-            <p className="text-gray-500 text-sm leading-relaxed mb-8 flex-grow">
-              {rec.motivation}
-            </p>
-            <a
-              href={rec.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-center py-4 px-4 rounded-xl bg-schumer-dark text-white text-xs font-bold uppercase tracking-widest hover:bg-black transition-colors shadow-lg hover:shadow-xl active:scale-95 transform transition-transform"
-            >
-              {rec.ctaText || "Bekijk model"}
-            </a>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-12 bg-white rounded-2xl p-10 border border-gray-100 shadow-sm text-center">
+           <div className="w-16 h-16 bg-gray-50 text-schumer-red rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-8 h-8">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+           </div>
+           <h3 className="text-xl font-serif mb-3">Persoonlijke ondersteuning</h3>
+           <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
+              Omdat wij streven naar de hoogste kwaliteit, adviseren wij u graag persoonlijk over onze alternatieven of specifieke mogelijkheden buiten ons standaard online assortiment.
+           </p>
+        </div>
+      )}
 
-      <div className="bg-schumer-dark rounded-3xl p-8 md:p-12 text-white relative overflow-hidden text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-8 shadow-2xl">
-        <div className="z-10 max-w-lg">
-          <h3 className="text-2xl md:text-3xl font-serif mb-4">Ervaar het zelf</h3>
-          <p className="text-gray-400 text-sm leading-relaxed">
-            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen. De koffie staat voor u klaar.
+      {/* Optimized CTA Section: Wider text, narrower buttons */}
+      <div className="bg-schumer-dark rounded-3xl p-8 md:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl">
+        <div className="z-10 flex-grow md:max-w-[65%]">
+          <h3 className="text-2xl md:text-4xl font-serif mb-4">Ervaar het zelf</h3>
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen. Onze adviseurs staan klaar met expertise en een goede kop koffie.
           </p>
         </div>
-        <div className="z-10 flex flex-col sm:flex-row gap-4 shrink-0 w-full sm:w-auto">
+        
+        <div className="z-10 flex flex-col gap-3 shrink-0 w-full md:w-[280px]">
           <a 
             href="https://www.schumer.nl/contact/"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-8 py-4 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-105 text-center text-sm shadow-xl"
+            className="w-full px-6 py-4 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] text-center text-sm shadow-xl"
           >
             Plan showroomafspraak
           </a>
           <a 
             href="mailto:info@schumer.nl"
-            className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/20 transition-all text-center text-sm"
+            className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/20 transition-all text-center text-sm"
           >
             Vraag advies per mail
           </a>
         </div>
+        
         <div className="absolute top-0 right-0 w-64 h-64 bg-schumer-red/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl"></div>
       </div>
 

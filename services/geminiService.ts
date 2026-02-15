@@ -79,6 +79,16 @@ const FALLBACK_RESULTS: ConfigResult = {
 };
 
 export const getPianoRecommendations = async (config: UserConfig): Promise<ConfigResult> => {
+  // Direct return for Digital Piano as requested
+  if (config.instrumentType === 'digital') {
+    return {
+      title: "Digitale Piano's",
+      intro: "Helaas liggen digitale piano's op dit moment niet in ons standaard online assortiment. We helpen u echter graag persoonlijk verder om te kijken naar de mogelijkheden of een passend akoestisch alternatief.",
+      recommendations: [], // Signal special empty state
+      showShowroomCTA: true
+    };
+  }
+
   const ai = getAI();
   
   // Select the appropriate list based on instrument type
@@ -98,7 +108,7 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     Op basis van de onderstaande selectie van de klant moet je exact 3 instrumenten kiezen uit de verstrekte lijst.
     
     KLANTPROFIEL:
-    - Gekozen categorie: ${config.instrumentType}
+    - Gekozen categorie: ${config.instrumentType === 'vleugel' ? 'Vleugel' : 'Akoestische piano'}
     - Niveau: ${config.skillLevel}
     - Budget: ${config.budget}
     - Prioriteiten: ${config.priorities.join(', ')}
@@ -109,22 +119,21 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     GEEF ANTWOORD IN DIT JSON FORMAAT:
     {
       "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Een korte inleidende zin die de klant complimenteert met hun interesse in een ${config.instrumentType === 'vleugel' ? 'vleugel' : 'piano'}.",
+      "intro": "Een korte inleidende zin die de klant complimenteert met hun interesse in een ${config.instrumentType === 'vleugel' ? 'vleugel' : 'akoestische piano'}.",
       "recommendations": [
         {
           "model": "Volledige Naam van Model",
-          "motivation": "Max 2 zinnen waarom dit instrument perfect past bij hun ${config.skillLevel} niveau en budget van ${config.budget}. Noem eventueel de klank of het formaat.",
+          "motivation": "Max 2 korte zinnen waarom dit instrument perfect past bij hun ${config.skillLevel} niveau en budget. Noem de klank.",
           "link": "DE EXACTE URL UIT DE BOVENSTAANDE LIJST",
           "ctaText": "Bekijk model"
         }
       ]
     }
 
-    STRIKTE REGELS: 
-    1. Kies ONLY 3 instrumenten uit de verstrekte lijst.
-    2. Als de klant een 'vleugel' heeft geselecteerd, mag je NOOIT een staande piano aanraden.
-    3. Als de klant een 'acoustic' piano heeft geselecteerd, mag je NOOIT een vleugel aanraden.
-    4. Zorg dat de link exact overeenkomt met een link uit de lijst.
+    STRIKTE CATEGORIE REGELS: 
+    1. Als de klant een 'vleugel' zoekt, mag je ONLY URLs uit de vleugel-lijst gebruiken.
+    2. Als de klant een 'acoustic' piano zoekt, mag je ONLY URLs uit de piano-lijst gebruiken.
+    3. Kies precies 3 instrumenten.
   `;
 
   try {
@@ -140,12 +149,23 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     const result = JSON.parse(text) as ConfigResult;
 
     if (!result.recommendations || result.recommendations.length === 0) {
-      return FALLBACK_RESULTS;
+      // If AI fails but isn't digital, provide fallback within the correct category
+      const fallbackSubset = config.instrumentType === 'vleugel' 
+        ? VLEUGEL_PIANOS.slice(0, 3) 
+        : UPRIGHT_PIANOS.slice(0, 3);
+      
+      return {
+        ...FALLBACK_RESULTS,
+        recommendations: FALLBACK_RESULTS.recommendations.map((rec, i) => ({
+          ...rec,
+          link: fallbackSubset[i] || rec.link
+        }))
+      };
     }
 
-    // Safety check to ensure we stay within the chosen category if AI hallucinated
+    // Double check URLs consistency
     result.recommendations = result.recommendations.map(rec => {
-      const isValidLink = ALL_PRODUCTS.includes(rec.link);
+      const isValidLink = relevantUrls.includes(rec.link);
       return {
         ...rec,
         link: isValidLink ? rec.link : (relevantUrls[0] || ALL_PRODUCTS[0]),

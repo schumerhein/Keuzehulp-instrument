@@ -124,13 +124,16 @@ const App: React.FC = () => {
         
         <header className="bg-white border-b border-gray-100 py-6 px-6 md:px-10">
           <div className="flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-2xl font-serif tracking-widest uppercase text-schumer-dark">Schumer</span>
-              <span className="text-[10px] tracking-[0.3em] uppercase text-schumer-red -mt-1 font-bold">Piano's & Vleugels</span>
+            {/* New Official Schumer Logo Reconstruction */}
+            <div className="flex flex-col items-start select-none">
+              <span className="text-[8px] md:text-[9px] tracking-[0.4em] uppercase text-gray-500 font-medium ml-0.5">Sinds 1921</span>
+              <span className="text-3xl md:text-4xl font-serif text-schumer-red leading-[0.9] tracking-tight py-0.5">SCHUMER</span>
+              <span className="text-[9px] md:text-[10px] tracking-[0.5em] uppercase text-black font-bold whitespace-nowrap ml-0.5">Piano's & Vleugels</span>
             </div>
+            
             {currentStep < totalSteps && (
               <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400 font-bold uppercase tracking-widest">Stap {currentStep + 1} / {totalSteps}</span>
+                <span className="text-xs text-gray-400 font-bold uppercase tracking-widest bg-gray-50 px-3 py-1.5 rounded-full">Stap {currentStep + 1} / {totalSteps}</span>
               </div>
             )}
           </div>
