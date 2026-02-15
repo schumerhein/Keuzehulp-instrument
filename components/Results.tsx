@@ -96,27 +96,27 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
         </div>
       )}
 
-      {/* Optimized CTA Section: Wider text, narrower buttons */}
-      <div className="bg-schumer-dark rounded-3xl p-8 md:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-10 shadow-2xl">
-        <div className="z-10 flex-grow md:max-w-[65%]">
-          <h3 className="text-2xl md:text-4xl font-serif mb-4">Ervaar het zelf</h3>
-          <p className="text-gray-400 text-sm md:text-base leading-relaxed">
+      {/* Adjusted CTA Section: Text is even wider, buttons are narrower */}
+      <div className="bg-schumer-dark rounded-3xl p-8 md:p-10 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 shadow-2xl">
+        <div className="z-10 flex-grow md:flex-1">
+          <h3 className="text-2xl md:text-3xl font-serif mb-4">Ervaar het zelf</h3>
+          <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-2xl">
             Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen. Onze adviseurs staan klaar met expertise en een goede kop koffie.
           </p>
         </div>
         
-        <div className="z-10 flex flex-col gap-3 shrink-0 w-full md:w-[280px]">
+        <div className="z-10 flex flex-col gap-3 shrink-0 w-full md:w-[240px]">
           <a 
             href="https://www.schumer.nl/contact/"
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full px-6 py-4 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] text-center text-sm shadow-xl"
+            className="w-full px-5 py-3.5 bg-schumer-red hover:bg-schumer-red/90 text-white font-bold rounded-xl transition-all transform hover:scale-[1.02] text-center text-xs uppercase tracking-widest shadow-xl"
           >
             Plan showroomafspraak
           </a>
           <a 
             href="mailto:info@schumer.nl"
-            className="w-full px-6 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/20 transition-all text-center text-sm"
+            className="w-full px-5 py-3.5 bg-white/5 hover:bg-white/10 text-white font-bold rounded-xl border border-white/20 transition-all text-center text-xs uppercase tracking-widest"
           >
             Vraag advies per mail
           </a>

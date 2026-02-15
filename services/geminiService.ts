@@ -84,56 +84,57 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     return {
       title: "Digitale Piano's",
       intro: "Helaas liggen digitale piano's op dit moment niet in ons standaard online assortiment. We helpen u echter graag persoonlijk verder om te kijken naar de mogelijkheden of een passend akoestisch alternatief.",
-      recommendations: [], // Signal special empty state
+      recommendations: [], 
       showShowroomCTA: true
     };
   }
 
   const ai = getAI();
   
-  // Select the appropriate list based on instrument type
+  // Deterministic URL selection based on category
   let relevantUrls: string[] = [];
-  if (config.instrumentType === 'acoustic') {
-    relevantUrls = UPRIGHT_PIANOS;
-  } else if (config.instrumentType === 'vleugel') {
+  let categoryLabel = "";
+  
+  if (config.instrumentType === 'vleugel') {
     relevantUrls = VLEUGEL_PIANOS;
+    categoryLabel = "VLEUGEL";
   } else {
-    relevantUrls = ALL_PRODUCTS;
+    // Treat 'acoustic' and 'unsure' as Upright Piano search by default for Schumer context
+    relevantUrls = UPRIGHT_PIANOS;
+    categoryLabel = "AKOESTISCHE (STAANDE) PIANO";
   }
 
   const prompt = `
     Je bent een senior piano-adviseur bij Schumer Piano's & Vleugels.
-    De klant heeft gekozen voor type: ${config.instrumentType}.
-    
-    Op basis van de onderstaande selectie van de klant moet je exact 3 instrumenten kiezen uit de verstrekte lijst.
-    
+    STRIKTE OPDRACHT: De klant zoekt uitsluitend een ${categoryLabel}.
+    Je MOET precies 3 instrumenten kiezen die EXCLUSIEF voorkomen in de onderstaande lijst.
+
     KLANTPROFIEL:
-    - Gekozen categorie: ${config.instrumentType === 'vleugel' ? 'Vleugel' : 'Akoestische piano'}
     - Niveau: ${config.skillLevel}
     - Budget: ${config.budget}
+    - Voorkeur: ${config.condition === 'new' ? 'Nieuw' : 'Tweedehands'}
     - Prioriteiten: ${config.priorities.join(', ')}
 
-    LIJST MET BESCHIKBARE PRODUCTEN (URLS):
+    LIJST MET TOEGESTANE PRODUCTEN (URLS):
     ${relevantUrls.join('\n')}
 
     GEEF ANTWOORD IN DIT JSON FORMAAT:
     {
       "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Een korte inleidende zin die de klant complimenteert met hun interesse in een ${config.instrumentType === 'vleugel' ? 'vleugel' : 'akoestische piano'}.",
+      "intro": "Een korte, deskundige zin waarom deze 3 modellen het beste passen bij een zoektocht naar een ${categoryLabel}.",
       "recommendations": [
         {
-          "model": "Volledige Naam van Model",
-          "motivation": "Max 2 korte zinnen waarom dit instrument perfect past bij hun ${config.skillLevel} niveau en budget. Noem de klank.",
+          "model": "Naam van Model",
+          "motivation": "Max 2 korte zinnen motivatie.",
           "link": "DE EXACTE URL UIT DE BOVENSTAANDE LIJST",
           "ctaText": "Bekijk model"
         }
       ]
     }
 
-    STRIKTE CATEGORIE REGELS: 
-    1. Als de klant een 'vleugel' zoekt, mag je ONLY URLs uit de vleugel-lijst gebruiken.
-    2. Als de klant een 'acoustic' piano zoekt, mag je ONLY URLs uit de piano-lijst gebruiken.
-    3. Kies precies 3 instrumenten.
+    BELANGRIJK: 
+    - Als de klant een ${categoryLabel} zoekt, mag er GEEN ANDER TYPE instrument in het resultaat staan.
+    - Gebruik alleen de URL's die ik je heb gegeven.
   `;
 
   try {
@@ -149,33 +150,44 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     const result = JSON.parse(text) as ConfigResult;
 
     if (!result.recommendations || result.recommendations.length === 0) {
-      // If AI fails but isn't digital, provide fallback within the correct category
-      const fallbackSubset = config.instrumentType === 'vleugel' 
-        ? VLEUGEL_PIANOS.slice(0, 3) 
-        : UPRIGHT_PIANOS.slice(0, 3);
-      
-      return {
-        ...FALLBACK_RESULTS,
-        recommendations: FALLBACK_RESULTS.recommendations.map((rec, i) => ({
-          ...rec,
-          link: fallbackSubset[i] || rec.link
-        }))
-      };
+      throw new Error("Geen aanbevelingen gegenereerd");
     }
 
-    // Double check URLs consistency
-    result.recommendations = result.recommendations.map(rec => {
-      const isValidLink = relevantUrls.includes(rec.link);
-      return {
-        ...rec,
-        link: isValidLink ? rec.link : (relevantUrls[0] || ALL_PRODUCTS[0]),
-        ctaText: rec.ctaText || "Bekijk model"
-      };
+    // Hard validation check: Force the correct category if AI hallucinated
+    result.recommendations = result.recommendations.map((rec, index) => {
+      const isCorrectCategory = relevantUrls.includes(rec.link);
+      
+      if (!isCorrectCategory) {
+        // AI proposed a link from the wrong category or a non-existent link
+        // We replace it with a valid one from the intended category
+        const safeLink = relevantUrls[index % relevantUrls.length];
+        return {
+          ...rec,
+          link: safeLink,
+          // Clean model name if it's clearly wrong (optional, but link is most important)
+          ctaText: rec.ctaText || (config.instrumentType === 'vleugel' ? 'Ontdek vleugel' : 'Bekijk piano')
+        };
+      }
+      return rec;
     }).slice(0, 3);
 
     return result;
   } catch (error) {
-    console.error("AI Generation Error:", error);
-    return FALLBACK_RESULTS;
+    console.error("AI Recommendation Error:", error);
+    
+    // Category-specific fallback
+    const fallbackSubset = config.instrumentType === 'vleugel' 
+      ? VLEUGEL_PIANOS.slice(0, 3) 
+      : UPRIGHT_PIANOS.slice(0, 3);
+
+    return {
+      ...FALLBACK_RESULTS,
+      title: `Onze selectie ${config.instrumentType === 'vleugel' ? 'vleugels' : "piano's"}`,
+      recommendations: FALLBACK_RESULTS.recommendations.map((rec, i) => ({
+        ...rec,
+        model: config.instrumentType === 'vleugel' ? `Schimmel Vleugel Model ${i+1}` : rec.model,
+        link: fallbackSubset[i] || fallbackSubset[0]
+      }))
+    };
   }
 };
