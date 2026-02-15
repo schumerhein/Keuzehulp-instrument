@@ -1,6 +1,6 @@
 
-import { GoogleGenAI } from "@google/genai";
-import { UserConfig, ConfigResult, Recommendation, Budget, Condition } from "../types";
+import { GoogleGenAI, Type } from "@google/genai";
+import { UserConfig, ConfigResult, Recommendation, Budget } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
@@ -67,26 +67,22 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
 
   const ai = getAI();
   
-  // 1. Initial Filtering based on hard category constraint
+  // 1. Initial Filtering
   let filteredProducts: PianoProduct[] = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS;
-  
-  // 2. Filter by Silent system if requested
   const wantsSilent = config.priorities.includes('silent');
+  
   if (wantsSilent) {
     filteredProducts = filteredProducts.filter(p => p.isSilent);
   }
 
-  // 3. Filter by Condition (New vs Used)
   if (config.condition !== 'any') {
     filteredProducts = filteredProducts.filter(p => p.condition === config.condition);
   }
 
-  // 4. Budget Match Check
   const exactMatches = filteredProducts.filter(p => p.priceRange === config.budget);
   const noExactMatches = exactMatches.length === 0;
 
-  // We provide the AI with the list of *actually available* products based on the hard filters.
-  // If the list is empty, we give them the broader category list to find an alternative.
+  // We provide the broader category list if no exact matches, to find alternatives
   const productsToConsider = noExactMatches ? (config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS) : exactMatches;
 
   const productsContext = productsToConsider
@@ -103,77 +99,91 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     STRIKTE OPDRACHT:
     1. Controleer of de gevraagde combinatie (Budget + Conditie + Silent) op voorraad is in de lijst hieronder.
     2. Zo NEE: Meld dit DIRECT in de inleiding ("Helaas hebben wij op dit moment geen [Nieuwe/Tweedehands] [Piano's/Vleugels] met Silent systeem in de prijsklasse ${config.budget} op voorraad.").
-    3. Zo NEE: Doe in dat geval 1 of 2 sterke VOORSTEL(LEN) voor een vergelijkbaar alternatief uit de lijst (bijv. een andere prijsklasse of conditie) en leg uit waarom dit de beste optie is.
+    3. Zo NEE: Doe in dat geval 1 of 2 sterke VOORSTEL(LEN) voor een vergelijkbaar alternatief uit de lijst en leg uit waarom dit de beste optie is.
     4. Zo JA: Toon de exacte matches (max 3).
-    5. SPECIFIEKE CASE: Als een klant een Piano >15k zoekt en die is er niet, adviseer dan een vleugel of een exclusief handgebouwd model als alternatief.
+    5. Je hoeft niet altijd 3 opties te geven. 1 of 2 sterke matches is beter dan 3 matige.
 
-    LIJST VAN PRODUCTEN OM UIT TE KIEZEN:
+    LIJST VAN BESCHIKBARE PRODUCTEN:
     ${productsContext}
-
-    GEEF ANTWOORD IN DIT JSON FORMAAT:
-    {
-      "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Schrijf een eerlijk en deskundig advies. Benoem het als een combinatie niet direct leverbaar is en leg het alternatief uit.",
-      "recommendations": [
-        {
-          "model": "EXACTE NAAM UIT LIJST",
-          "motivation": "Korte motivatie gericht op de specifieke wensen.",
-          "link": "URL UIT LIJST",
-          "ctaText": "Bekijk model"
-        }
-      ]
-    }
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ parts: [{ text: prompt }] }],
-      config: { responseMimeType: "application/json" },
+      config: { 
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            intro: { type: Type.STRING },
+            recommendations: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  model: { type: Type.STRING },
+                  motivation: { type: Type.STRING },
+                  link: { type: Type.STRING },
+                  ctaText: { type: Type.STRING }
+                },
+                required: ["model", "motivation", "link"]
+              }
+            }
+          },
+          required: ["title", "intro", "recommendations"]
+        }
+      },
     });
 
-    const result = JSON.parse(response.text || "{}") as ConfigResult;
-
-    // Validation to ensure absolute categorical integrity
-    result.recommendations = (result.recommendations || []).map((rec, index) => {
-      const allPossible = [...UPRIGHT_PRODUCTS, ...VLEUGEL_PRODUCTS];
-      const match = allPossible.find(p => p.url === rec.link || p.name === rec.model);
-      
-      if (!match) {
-        // Safe fallback in case AI hallucinated a product
-        const safeList = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS;
-        const fallback = safeList[index % safeList.length];
+    const parsed = JSON.parse(response.text || "{}");
+    
+    // Safety mapping and validation
+    const result: ConfigResult = {
+      title: parsed.title || "Uw persoonlijk advies van Schumer",
+      intro: parsed.intro || "Op basis van uw wensen hebben we de volgende selectie samengesteld.",
+      showShowroomCTA: true,
+      recommendations: (parsed.recommendations || []).map((rec: any, index: number) => {
+        const allPossible = [...UPRIGHT_PRODUCTS, ...VLEUGEL_PRODUCTS];
+        const match = allPossible.find(p => p.url === rec.link || p.name === rec.model);
+        
+        if (!match) {
+          const safeList = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS;
+          const fallback = safeList[index % safeList.length];
+          return {
+            model: fallback.name,
+            motivation: rec.motivation || "Een prachtig instrument dat perfect aansluit bij uw profiel.",
+            link: fallback.url,
+            type: 'product',
+            ctaText: rec.ctaText || 'Bekijk model'
+          };
+        }
         return {
-          model: fallback.name,
-          motivation: rec.motivation || "Een hoogwaardig instrument uit onze collectie.",
-          link: fallback.url,
+          model: match.name,
+          motivation: rec.motivation,
+          link: match.url,
           type: 'product',
-          ctaText: 'Bekijk model'
-        } as Recommendation;
-      }
-      return { 
-        ...rec, 
-        model: match.name, 
-        link: match.url, 
-        type: 'product' 
-      } as Recommendation;
-    }).slice(0, 3);
+          ctaText: rec.ctaText || 'Bekijk model'
+        };
+      }).slice(0, 3)
+    };
 
     return result;
   } catch (error) {
-    console.error("Config Engine Error:", error);
+    console.error("Critical Gemini API Error:", error);
+    // Hardcoded fallback logic for complete failure
+    const fallbackList = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS.slice(0, 1) : UPRIGHT_PRODUCTS.slice(18, 19);
     return {
       title: "Persoonlijk advies op maat",
-      intro: "Onze excuses, we kunnen op dit moment geen automatische match maken. We adviseren u graag persoonlijk over onze actuele showroomvoorraad.",
-      recommendations: [
-        {
-          model: config.instrumentType === 'vleugel' ? "Yamaha C3X Conservatory" : "Yamaha U1 Professional",
-          motivation: "Een van onze meest gevraagde modellen, bekend om zijn ongekende kwaliteit.",
-          link: config.instrumentType === 'vleugel' ? "https://www.schumer.nl/product/yamaha-c3x/" : "https://www.schumer.nl/product/yamaha-u1-2/",
-          type: 'product',
-          ctaText: 'Bekijk model'
-        }
-      ],
+      intro: "Onze excuses, we konden op dit moment geen verbinding maken met onze voorraad-database. We adviseren u graag persoonlijk over onze actuele collectie.",
+      recommendations: fallbackList.map(p => ({
+        model: p.name,
+        motivation: "Een van onze meest gewaardeerde modellen voor pianisten van elk niveau.",
+        link: p.url,
+        type: 'product',
+        ctaText: 'Bekijk model'
+      })),
       showShowroomCTA: true
     };
   }
