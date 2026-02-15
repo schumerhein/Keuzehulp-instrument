@@ -49,7 +49,7 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
     );
   }
 
-  const isDigitalCase = results.recommendations.length === 0;
+  const hasRecommendations = results.recommendations.length > 0;
 
   return (
     <div className="animate-fadeIn max-w-4xl mx-auto">
@@ -60,8 +60,8 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
         </p>
       </div>
 
-      {!isDigitalCase ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      {hasRecommendations ? (
+        <div className={`grid grid-cols-1 md:grid-cols-${results.recommendations.length} gap-6 mb-12 max-w-4xl mx-auto`}>
           {results.recommendations.map((rec, idx) => (
             <div key={idx} className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col h-full hover:-translate-y-1">
               <div className="mb-4">
@@ -91,17 +91,16 @@ const Results: React.FC<ResultsProps> = ({ results, onReset, isLoading }) => {
            </div>
            <h3 className="text-xl font-serif mb-3">Persoonlijke ondersteuning</h3>
            <p className="text-gray-500 max-w-lg mx-auto leading-relaxed">
-              Omdat wij streven naar de hoogste kwaliteit, adviseren wij u graag persoonlijk over onze alternatieven of specifieke mogelijkheden buiten ons standaard online assortiment.
+              Voor uw specifieke wensen of digitale instrumenten adviseren wij u graag persoonlijk. Zo kunnen we samen kijken naar de actuele voorraad of alternatieve oplossingen op maat.
            </p>
         </div>
       )}
 
-      {/* Adjusted CTA Section: Text is even wider, buttons are narrower */}
       <div className="bg-schumer-dark rounded-3xl p-8 md:p-10 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 shadow-2xl">
         <div className="z-10 flex-grow md:flex-1">
           <h3 className="text-2xl md:text-3xl font-serif mb-4">Ervaar het zelf</h3>
           <p className="text-gray-400 text-sm md:text-base leading-relaxed max-w-2xl">
-            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking met uw favoriete modellen. Onze adviseurs staan klaar met expertise en een goede kop koffie.
+            Een piano moet u horen en voelen. Kom langs in onze showroom voor een vrijblijvende kennismaking. Onze adviseurs staan klaar met expertise en een goede kop koffie.
           </p>
         </div>
         

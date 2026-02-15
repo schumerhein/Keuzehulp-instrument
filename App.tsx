@@ -21,36 +21,6 @@ const App: React.FC = () => {
 
   const totalSteps = 6;
 
-  // Hardcoded fallback for absolute safety
-  const EMERGENCY_FALLBACK: ConfigResult = {
-    title: "Uw persoonlijke piano selectie",
-    intro: "Op basis van uw voorkeuren hebben we deze drie uitmuntende instrumenten voor u geselecteerd uit onze collectie.",
-    showShowroomCTA: true,
-    recommendations: [
-      {
-        model: "Yamaha U1 Professional",
-        motivation: "De meest gekozen piano ter wereld, bekend om zijn heldere klank en ongekende betrouwbaarheid.",
-        link: "https://www.schumer.nl/product/yamaha-u1-2/",
-        type: "product",
-        ctaText: "Bekijk model"
-      },
-      {
-        model: "Schimmel 174T Vleugel",
-        motivation: "Een prachtige Duitse vleugel die perfect past in een gemiddelde woonkamer met een rijke, warme toon.",
-        link: "https://www.schumer.nl/product/schimmel-174t/",
-        type: "product",
-        ctaText: "Ontdek vleugel"
-      },
-      {
-        model: "Yamaha B3 Silent",
-        motivation: "De ideale gezins-piano die dankzij het Silent systeem op elk moment van de dag bespeeld kan worden.",
-        link: "https://www.schumer.nl/product/yamaha-b3-silent/",
-        type: "product",
-        ctaText: "Bekijk details"
-      }
-    ]
-  };
-
   const handleFinish = () => {
     setCurrentStep(totalSteps);
   };
@@ -65,15 +35,16 @@ const App: React.FC = () => {
           const data = await getPianoRecommendations(config);
           
           const elapsedTime = Date.now() - startTime;
-          const minDelay = 1800; // Minimum delay for premium feel
+          const minDelay = 1800; 
           if (elapsedTime < minDelay) {
             await new Promise(r => setTimeout(r, minDelay - elapsedTime));
           }
           
-          setResults(data || EMERGENCY_FALLBACK);
+          setResults(data);
         } catch (e) {
           console.error("Critical error in recommendation engine:", e);
-          setResults(EMERGENCY_FALLBACK);
+          // Laat Results component de foutmelding afhandelen
+          setResults(null);
         } finally {
           setIsFinishing(false);
         }
@@ -124,7 +95,6 @@ const App: React.FC = () => {
         
         <header className="bg-white border-b border-gray-100 py-6 px-6 md:px-10">
           <div className="flex items-center justify-between">
-            {/* New Official Schumer Logo Reconstruction */}
             <div className="flex flex-col items-start select-none">
               <span className="text-[8px] md:text-[9px] tracking-[0.4em] uppercase text-gray-500 font-medium ml-0.5">Sinds 1921</span>
               <span className="text-3xl md:text-4xl font-serif text-schumer-red leading-[0.9] tracking-tight py-0.5">SCHUMER</span>

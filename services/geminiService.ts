@@ -1,89 +1,65 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { UserConfig, ConfigResult } from "../types";
+import { UserConfig, ConfigResult, Recommendation, Budget, Condition } from "../types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-const UPRIGHT_PIANOS = [
-  "https://www.schumer.nl/product/wilh-steinberg/",
-  "https://www.schumer.nl/product/schimmel-c-130t/",
-  "https://www.schumer.nl/product/yamaha-su-118-c-2/",
-  "https://www.schumer.nl/product/ritmuller-up-177-m/",
-  "https://www.schumer.nl/product/schimmel-130t/",
-  "https://www.schumer.nl/product/schumer-up-118m/",
-  "https://www.schumer.nl/product/yamaha-su-118c/",
-  "https://www.schumer.nl/product/rameau/",
-  "https://www.schumer.nl/product/seiler-116/",
-  "https://www.schumer.nl/product/eterna-er30/",
-  "https://www.schumer.nl/product/yamaha-p121t-silent/",
-  "https://www.schumer.nl/product/eterna-er10/",
-  "https://www.schumer.nl/product/petrof-118-g1/",
-  "https://www.schumer.nl/product/grotrian-steinweg-4/",
-  "https://www.schumer.nl/product/schumer-up-117m/",
-  "https://www.schumer.nl/product/wilh-steinberg-118/",
-  "https://www.schumer.nl/product/yamaha-b3-silent-2/",
-  "https://www.schumer.nl/product/yamaha-u1-silent/",
-  "https://www.schumer.nl/product/yamaha-u1-2/",
-  "https://www.schumer.nl/product/yamaha-p121/",
-  "https://www.schumer.nl/product/romhildt/",
-  "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/",
-  "https://www.schumer.nl/product/yamaha-u3-silent/",
-  "https://www.schumer.nl/product/yamaha-b3-silent/"
+interface PianoProduct {
+  name: string;
+  url: string;
+  priceRange: Budget;
+  isSilent: boolean;
+  condition: 'new' | 'used';
+}
+
+const UPRIGHT_PRODUCTS: PianoProduct[] = [
+  { name: "Wilh. Steinberg Upright", url: "https://www.schumer.nl/product/wilh-steinberg/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Schimmel C 130T", url: "https://www.schumer.nl/product/schimmel-c-130t/", priceRange: '15k+', isSilent: false, condition: 'new' },
+  { name: "Yamaha SU-118 C Professional", url: "https://www.schumer.nl/product/yamaha-su-118-c-2/", priceRange: '15k+', isSilent: false, condition: 'new' },
+  { name: "Ritmüller UP 177 M", url: "https://www.schumer.nl/product/ritmuller-up-177-m/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Schimmel 130T", url: "https://www.schumer.nl/product/schimmel-130t/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Schumer UP-118M", url: "https://www.schumer.nl/product/schumer-up-118m/", priceRange: '3-7.5k', isSilent: false, condition: 'new' },
+  { name: "Yamaha SU-118C Heritage", url: "https://www.schumer.nl/product/yamaha-su-118c/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Rameau Piano (Occasion)", url: "https://www.schumer.nl/product/rameau/", priceRange: '1-3k', isSilent: false, condition: 'used' },
+  { name: "Seiler 116 Konsole", url: "https://www.schumer.nl/product/seiler-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used' },
+  { name: "Eterna ER30", url: "https://www.schumer.nl/product/eterna-er30/", priceRange: '1-3k', isSilent: false, condition: 'used' },
+  { name: "Yamaha P121T Silent", url: "https://www.schumer.nl/product/yamaha-p121t-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'new' },
+  { name: "Eterna ER10", url: "https://www.schumer.nl/product/eterna-er10/", priceRange: '1-3k', isSilent: false, condition: 'used' },
+  { name: "Petrof 118 G1", url: "https://www.schumer.nl/product/petrof-118-g1/", priceRange: '3-7.5k', isSilent: false, condition: 'used' },
+  { name: "Grotrian Steinweg 4", url: "https://www.schumer.nl/product/grotrian-steinweg-4/", priceRange: '7.5-15k', isSilent: false, condition: 'used' },
+  { name: "Schumer UP-117M", url: "https://www.schumer.nl/product/schumer-up-117m/", priceRange: '3-7.5k', isSilent: false, condition: 'new' },
+  { name: "Wilh. Steinberg 118", url: "https://www.schumer.nl/product/wilh-steinberg-118/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Yamaha B3 Silent SC2", url: "https://www.schumer.nl/product/yamaha-b3-silent-2/", priceRange: '7.5-15k', isSilent: true, condition: 'new' },
+  { name: "Yamaha U1 Silent", url: "https://www.schumer.nl/product/yamaha-u1-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used' },
+  { name: "Yamaha U1 Professional", url: "https://www.schumer.nl/product/yamaha-u1-2/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Yamaha P121 Ebony", url: "https://www.schumer.nl/product/yamaha-p121/", priceRange: '7.5-15k', isSilent: false, condition: 'new' },
+  { name: "Römhildt Piano", url: "https://www.schumer.nl/product/romhildt/", priceRange: '1-3k', isSilent: false, condition: 'used' },
+  { name: "Seiler 122 Konsole Silent", url: "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used' },
+  { name: "Yamaha U3 Silent", url: "https://www.schumer.nl/product/yamaha-u3-silent/", priceRange: '15k+', isSilent: true, condition: 'used' },
+  { name: "Yamaha B3 Silent", url: "https://www.schumer.nl/product/yamaha-b3-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'new' }
 ];
 
-const VLEUGEL_PIANOS = [
-  "https://www.schumer.nl/product/bosendorfer-200/",
-  "https://www.schumer.nl/product/yamaha-c3x/",
-  "https://www.schumer.nl/product/george-steck/",
-  "https://www.schumer.nl/product/steinway-sons-b211-2/",
-  "https://www.schumer.nl/product/boston-156/",
-  "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/",
-  "https://www.schumer.nl/product/c-bechstein/",
-  "https://www.schumer.nl/product/bluthner/",
-  "https://www.schumer.nl/product/schimmel-208t/",
-  "https://www.schumer.nl/product/schimmel-174t/",
-  "https://www.schumer.nl/product/yamaha-c3/",
-  "https://www.schumer.nl/product/c-bechstein-b203-2/",
-  "https://www.schumer.nl/product/w-hoffmann-190/"
+const VLEUGEL_PRODUCTS: PianoProduct[] = [
+  { name: "Bösendorfer 200", url: "https://www.schumer.nl/product/bosendorfer-200/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Yamaha C3X Conservatory", url: "https://www.schumer.nl/product/yamaha-c3x/", priceRange: '15k+', isSilent: false, condition: 'new' },
+  { name: "George Steck Vleugel (Occasion)", url: "https://www.schumer.nl/product/george-steck/", priceRange: '3-7.5k', isSilent: false, condition: 'used' },
+  { name: "Steinway & Sons B211", url: "https://www.schumer.nl/product/steinway-sons-b211-2/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Boston 156 Performance Edition", url: "https://www.schumer.nl/product/boston-156/", priceRange: '15k+', isSilent: false, condition: 'new' },
+  { name: "Yamaha C6X Enspire Pro Silent", url: "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/", priceRange: '15k+', isSilent: true, condition: 'new' },
+  { name: "C. Bechstein Vleugel", url: "https://www.schumer.nl/product/c-bechstein/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Blüthner Meestervleugel", url: "https://www.schumer.nl/product/bluthner/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Schimmel 208T", url: "https://www.schumer.nl/product/schimmel-208t/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "Schimmel 174T", url: "https://www.schumer.nl/product/schimmel-174t/", priceRange: '7.5-15k', isSilent: false, condition: 'used' },
+  { name: "Yamaha C3 Classic", url: "https://www.schumer.nl/product/yamaha-c3/", priceRange: '7.5-15k', isSilent: false, condition: 'used' },
+  { name: "C. Bechstein B203 Premium", url: "https://www.schumer.nl/product/c-bechstein-b203-2/", priceRange: '15k+', isSilent: false, condition: 'used' },
+  { name: "W. Hoffmann 190 Professional", url: "https://www.schumer.nl/product/w-hoffmann-190/", priceRange: '15k+', isSilent: false, condition: 'new' }
 ];
-
-const ALL_PRODUCTS = [...UPRIGHT_PIANOS, ...VLEUGEL_PIANOS];
-
-const FALLBACK_RESULTS: ConfigResult = {
-  title: "Onze aanbevelingen voor u",
-  intro: "Op basis van onze expertise hebben we drie instrumenten geselecteerd die uitstekend passen bij uw profiel. Deze piano's staan bekend om hun betrouwbaarheid en muzikale kwaliteit.",
-  showShowroomCTA: true,
-  recommendations: [
-    {
-      model: "Yamaha U1 Professional",
-      motivation: "De absolute referentie voor de moderne pianist. Bekend om zijn heldere klank en ongekende betrouwbaarheid.",
-      link: "https://www.schumer.nl/product/yamaha-u1-2/",
-      type: "product",
-      ctaText: "Bekijk model"
-    },
-    {
-      model: "Schimmel 174T Vleugel",
-      motivation: "Een karaktervolle Duitse vleugel met een rijke, zingende toon. De perfecte keuze voor de ultieme speelervaring.",
-      link: "https://www.schumer.nl/product/schimmel-174t/",
-      type: "product",
-      ctaText: "Ontdek vleugel"
-    },
-    {
-      model: "Yamaha B3 Silent",
-      motivation: "De ideale gezins-piano met professionele prestaties. Dankzij het Silent systeem kunt u op elk moment van de dag oefenen.",
-      link: "https://www.schumer.nl/product/yamaha-b3-silent/",
-      type: "product",
-      ctaText: "Bekijk details"
-    }
-  ]
-};
 
 export const getPianoRecommendations = async (config: UserConfig): Promise<ConfigResult> => {
-  // Direct return for Digital Piano as requested
   if (config.instrumentType === 'digital') {
     return {
       title: "Digitale Piano's",
-      intro: "Helaas liggen digitale piano's op dit moment niet in ons standaard online assortiment. We helpen u echter graag persoonlijk verder om te kijken naar de mogelijkheden of een passend akoestisch alternatief.",
+      intro: "Op dit moment tonen wij onze digitale piano's niet in deze online selectie. We nodigen u echter graag uit in onze showroom om het verschil tussen digitaal en akoestisch zelf te ervaren.",
       recommendations: [], 
       showShowroomCTA: true
     };
@@ -91,103 +67,114 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
 
   const ai = getAI();
   
-  // Deterministic URL selection based on category
-  let relevantUrls: string[] = [];
-  let categoryLabel = "";
+  // 1. Initial Filtering based on hard category constraint
+  let filteredProducts: PianoProduct[] = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS;
   
-  if (config.instrumentType === 'vleugel') {
-    relevantUrls = VLEUGEL_PIANOS;
-    categoryLabel = "VLEUGEL";
-  } else {
-    // Treat 'acoustic' and 'unsure' as Upright Piano search by default for Schumer context
-    relevantUrls = UPRIGHT_PIANOS;
-    categoryLabel = "AKOESTISCHE (STAANDE) PIANO";
+  // 2. Filter by Silent system if requested
+  const wantsSilent = config.priorities.includes('silent');
+  if (wantsSilent) {
+    filteredProducts = filteredProducts.filter(p => p.isSilent);
   }
 
+  // 3. Filter by Condition (New vs Used)
+  if (config.condition !== 'any') {
+    filteredProducts = filteredProducts.filter(p => p.condition === config.condition);
+  }
+
+  // 4. Budget Match Check
+  const exactMatches = filteredProducts.filter(p => p.priceRange === config.budget);
+  const noExactMatches = exactMatches.length === 0;
+
+  // We provide the AI with the list of *actually available* products based on the hard filters.
+  // If the list is empty, we give them the broader category list to find an alternative.
+  const productsToConsider = noExactMatches ? (config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS) : exactMatches;
+
+  const productsContext = productsToConsider
+    .map(p => `- ${p.name} (Prijs: ${p.priceRange}, Silent: ${p.isSilent ? 'Ja' : 'Nee'}, Conditie: ${p.condition === 'new' ? 'Nieuw' : 'Occasion'}, URL: ${p.url})`)
+    .join('\n');
+
   const prompt = `
-    Je bent een senior piano-adviseur bij Schumer Piano's & Vleugels.
-    STRIKTE OPDRACHT: De klant zoekt uitsluitend een ${categoryLabel}.
-    Je MOET precies 3 instrumenten kiezen die EXCLUSIEF voorkomen in de onderstaande lijst.
+    Je bent een senior piano-adviseur bij Schumer.
+    DE KLANT ZOEKT: ${config.instrumentType === 'vleugel' ? 'Vleugel' : 'Akoestische piano'}.
+    GEKOZEN BUDGET: ${config.budget}.
+    CONDITIE VOORKEUR: ${config.condition === 'any' ? 'Maakt niet uit' : (config.condition === 'new' ? 'Nieuw' : 'Tweedehands/Occasion')}.
+    SILENT SYSTEEM NODIG: ${wantsSilent ? 'JA' : 'NEE'}.
 
-    KLANTPROFIEL:
-    - Niveau: ${config.skillLevel}
-    - Budget: ${config.budget}
-    - Voorkeur: ${config.condition === 'new' ? 'Nieuw' : 'Tweedehands'}
-    - Prioriteiten: ${config.priorities.join(', ')}
+    STRIKTE OPDRACHT:
+    1. Controleer of de gevraagde combinatie (Budget + Conditie + Silent) op voorraad is in de lijst hieronder.
+    2. Zo NEE: Meld dit DIRECT in de inleiding ("Helaas hebben wij op dit moment geen [Nieuwe/Tweedehands] [Piano's/Vleugels] met Silent systeem in de prijsklasse ${config.budget} op voorraad.").
+    3. Zo NEE: Doe in dat geval 1 of 2 sterke VOORSTEL(LEN) voor een vergelijkbaar alternatief uit de lijst (bijv. een andere prijsklasse of conditie) en leg uit waarom dit de beste optie is.
+    4. Zo JA: Toon de exacte matches (max 3).
+    5. SPECIFIEKE CASE: Als een klant een Piano >15k zoekt en die is er niet, adviseer dan een vleugel of een exclusief handgebouwd model als alternatief.
 
-    LIJST MET TOEGESTANE PRODUCTEN (URLS):
-    ${relevantUrls.join('\n')}
+    LIJST VAN PRODUCTEN OM UIT TE KIEZEN:
+    ${productsContext}
 
     GEEF ANTWOORD IN DIT JSON FORMAAT:
     {
       "title": "Uw persoonlijk advies van Schumer",
-      "intro": "Een korte, deskundige zin waarom deze 3 modellen het beste passen bij een zoektocht naar een ${categoryLabel}.",
+      "intro": "Schrijf een eerlijk en deskundig advies. Benoem het als een combinatie niet direct leverbaar is en leg het alternatief uit.",
       "recommendations": [
         {
-          "model": "Naam van Model",
-          "motivation": "Max 2 korte zinnen motivatie.",
-          "link": "DE EXACTE URL UIT DE BOVENSTAANDE LIJST",
+          "model": "EXACTE NAAM UIT LIJST",
+          "motivation": "Korte motivatie gericht op de specifieke wensen.",
+          "link": "URL UIT LIJST",
           "ctaText": "Bekijk model"
         }
       ]
     }
-
-    BELANGRIJK: 
-    - Als de klant een ${categoryLabel} zoekt, mag er GEEN ANDER TYPE instrument in het resultaat staan.
-    - Gebruik alleen de URL's die ik je heb gegeven.
   `;
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ parts: [{ text: prompt }] }],
-      config: {
-        responseMimeType: "application/json",
-      },
+      config: { responseMimeType: "application/json" },
     });
 
-    const text = response.text || "";
-    const result = JSON.parse(text) as ConfigResult;
+    const result = JSON.parse(response.text || "{}") as ConfigResult;
 
-    if (!result.recommendations || result.recommendations.length === 0) {
-      throw new Error("Geen aanbevelingen gegenereerd");
-    }
-
-    // Hard validation check: Force the correct category if AI hallucinated
-    result.recommendations = result.recommendations.map((rec, index) => {
-      const isCorrectCategory = relevantUrls.includes(rec.link);
+    // Validation to ensure absolute categorical integrity
+    result.recommendations = (result.recommendations || []).map((rec, index) => {
+      const allPossible = [...UPRIGHT_PRODUCTS, ...VLEUGEL_PRODUCTS];
+      const match = allPossible.find(p => p.url === rec.link || p.name === rec.model);
       
-      if (!isCorrectCategory) {
-        // AI proposed a link from the wrong category or a non-existent link
-        // We replace it with a valid one from the intended category
-        const safeLink = relevantUrls[index % relevantUrls.length];
+      if (!match) {
+        // Safe fallback in case AI hallucinated a product
+        const safeList = config.instrumentType === 'vleugel' ? VLEUGEL_PRODUCTS : UPRIGHT_PRODUCTS;
+        const fallback = safeList[index % safeList.length];
         return {
-          ...rec,
-          link: safeLink,
-          // Clean model name if it's clearly wrong (optional, but link is most important)
-          ctaText: rec.ctaText || (config.instrumentType === 'vleugel' ? 'Ontdek vleugel' : 'Bekijk piano')
-        };
+          model: fallback.name,
+          motivation: rec.motivation || "Een hoogwaardig instrument uit onze collectie.",
+          link: fallback.url,
+          type: 'product',
+          ctaText: 'Bekijk model'
+        } as Recommendation;
       }
-      return rec;
+      return { 
+        ...rec, 
+        model: match.name, 
+        link: match.url, 
+        type: 'product' 
+      } as Recommendation;
     }).slice(0, 3);
 
     return result;
   } catch (error) {
-    console.error("AI Recommendation Error:", error);
-    
-    // Category-specific fallback
-    const fallbackSubset = config.instrumentType === 'vleugel' 
-      ? VLEUGEL_PIANOS.slice(0, 3) 
-      : UPRIGHT_PIANOS.slice(0, 3);
-
+    console.error("Config Engine Error:", error);
     return {
-      ...FALLBACK_RESULTS,
-      title: `Onze selectie ${config.instrumentType === 'vleugel' ? 'vleugels' : "piano's"}`,
-      recommendations: FALLBACK_RESULTS.recommendations.map((rec, i) => ({
-        ...rec,
-        model: config.instrumentType === 'vleugel' ? `Schimmel Vleugel Model ${i+1}` : rec.model,
-        link: fallbackSubset[i] || fallbackSubset[0]
-      }))
+      title: "Persoonlijk advies op maat",
+      intro: "Onze excuses, we kunnen op dit moment geen automatische match maken. We adviseren u graag persoonlijk over onze actuele showroomvoorraad.",
+      recommendations: [
+        {
+          model: config.instrumentType === 'vleugel' ? "Yamaha C3X Conservatory" : "Yamaha U1 Professional",
+          motivation: "Een van onze meest gevraagde modellen, bekend om zijn ongekende kwaliteit.",
+          link: config.instrumentType === 'vleugel' ? "https://www.schumer.nl/product/yamaha-c3x/" : "https://www.schumer.nl/product/yamaha-u1-2/",
+          type: 'product',
+          ctaText: 'Bekijk model'
+        }
+      ],
+      showShowroomCTA: true
     };
   }
 };
