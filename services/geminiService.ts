@@ -111,14 +111,12 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
   };
 
   // AI Verrijking (veilig verpakt)
-  const apiKey = process.env.API_KEY;
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
     console.warn("Geen geldige API key gevonden, gebruik lokale fallback.");
     return defaultResult;
   }
 
   try {
-    const ai = new GoogleGenAI({ apiKey });
     const productsContext = bestMatches.map(p => `- ${p.name} (URL: ${p.url})`).join('\n');
 
     const prompt = `
