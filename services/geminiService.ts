@@ -3,48 +3,50 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { UserConfig, ConfigResult, Recommendation, Budget, PianoProduct } from "../types";
 
 const PRODUCTS: PianoProduct[] = [
-  // Uprights - New
-  { name: "Wilh. Steinberg Upright", url: "https://www.schumer.nl/product/wilh-steinberg/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Schimmel C 130T", url: "https://www.schumer.nl/product/schimmel-c-130t/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha SU-118 C Professional", url: "https://www.schumer.nl/product/yamaha-su-118-c-2/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Ritmüller UP 177 M", url: "https://www.schumer.nl/product/ritmuller-up-177-m/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Schimmel 130T", url: "https://www.schumer.nl/product/schimmel-130t/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Schumer UP-118M", url: "https://www.schumer.nl/product/schumer-up-118m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Schumer UP-117M", url: "https://www.schumer.nl/product/schumer-up-117m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
+  // Akoestische piano's (Uprights)
+  { name: "Yamaha B1 SG2 Silent", url: "https://www.schumer.nl/product/yamaha-b1-sg2-silent/", priceRange: '3-7.5k', isSilent: true, condition: 'used', type: 'acoustic' },
+  { name: "Rippen Maestro", url: "https://www.schumer.nl/product/rippen-maestro/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Rippen Largo", url: "https://www.schumer.nl/product/rippen-largo/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Schimmel 118 T", url: "https://www.schumer.nl/product/schimmel-118-t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Petrof 131 E1", url: "https://www.schumer.nl/product/petrof-131-e1/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Petrof 118 P1", url: "https://www.schumer.nl/product/petrof-118-p1/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Schimmel 116 S", url: "https://www.schumer.nl/product/schimmel-116-s/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Ritmüller UP 117 NS Nikkel", url: "https://www.schumer.nl/product/ritmuller-up-117-ns-nikkel/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
+  { name: "Ibach 116", url: "https://www.schumer.nl/product/ibach-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Grotrian-Steinweg 112 Vintage", url: "https://www.schumer.nl/product/grotrian-steinweg-112-vintage/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Yamaha U3 Zwart Hoogglans", url: "https://www.schumer.nl/product/yamaha-u3-zwart-hoogglans/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Schimmel C 120T", url: "https://www.schumer.nl/product/schimmel-c-120t/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
+  { name: "Yamaha U1 Professional", url: "https://www.schumer.nl/product/yamaha-u1-2/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
   { name: "Wilh. Steinberg 118", url: "https://www.schumer.nl/product/wilh-steinberg-118/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha B3 Silent SC2", url: "https://www.schumer.nl/product/yamaha-b3-silent-2/", priceRange: '7.5-15k', isSilent: true, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha P121T Silent", url: "https://www.schumer.nl/product/yamaha-p121t-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha B3 Silent", url: "https://www.schumer.nl/product/yamaha-b3-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha U1 Professional", url: "https://www.schumer.nl/product/yamaha-u1-2/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha P121 Ebony", url: "https://www.schumer.nl/product/yamaha-p121/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  
-  // Uprights - Used
-  { name: "Yamaha SU-118C Heritage", url: "https://www.schumer.nl/product/yamaha-su-118c/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Rameau Piano (Occasion)", url: "https://www.schumer.nl/product/rameau/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Seiler 116 Konsole", url: "https://www.schumer.nl/product/seiler-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Eterna ER30", url: "https://www.schumer.nl/product/eterna-er30/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Eterna ER10", url: "https://www.schumer.nl/product/eterna-er10/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Petrof 118 G1", url: "https://www.schumer.nl/product/petrof-118-g1/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Grotrian Steinweg 4", url: "https://www.schumer.nl/product/grotrian-steinweg-4/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Yamaha U1 Silent (Used)", url: "https://www.schumer.nl/product/yamaha-u1-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
+  { name: "Seiler 122 Konsole Silent", url: "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
   { name: "Römhildt Piano", url: "https://www.schumer.nl/product/romhildt/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Seiler 122 Silent (Used)", url: "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
-  { name: "Yamaha U3 Silent (Used)", url: "https://www.schumer.nl/product/yamaha-u3-silent/", priceRange: '15k+', isSilent: true, condition: 'used', type: 'acoustic' },
+  { name: "Yamaha U1 Silent", url: "https://www.schumer.nl/product/yamaha-u1-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
+  { name: "Schumer UP-117M", url: "https://www.schumer.nl/product/schumer-up-117m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
+  { name: "Grotrian Steinweg 4", url: "https://www.schumer.nl/product/grotrian-steinweg-4/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Petrof 118 G1", url: "https://www.schumer.nl/product/petrof-118-g1/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Eterna ER30", url: "https://www.schumer.nl/product/eterna-er30/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Seiler 116", url: "https://www.schumer.nl/product/seiler-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Rameau Piano", url: "https://www.schumer.nl/product/rameau/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Schumer UP-118M", url: "https://www.schumer.nl/product/schumer-up-118m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
+  { name: "Schimmel 130T", url: "https://www.schumer.nl/product/schimmel-130t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
+  { name: "Schimmel C 130T", url: "https://www.schumer.nl/product/schimmel-c-130t/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'acoustic' },
+  { name: "Wilh. Steinberg Upright", url: "https://www.schumer.nl/product/wilh-steinberg/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
 
-  // Vleugels
+  // Vleugels (Grands)
+  { name: "Schimmel CC 213 T", url: "https://www.schumer.nl/product/schimmel-cc-213-t/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "Steinway & Sons B211", url: "https://www.schumer.nl/product/steinway-sons-b211/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
   { name: "Bösendorfer 200", url: "https://www.schumer.nl/product/bosendorfer-200/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Yamaha C3X Conservatory", url: "https://www.schumer.nl/product/yamaha-c3x/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
-  { name: "George Steck Vleugel", url: "https://www.schumer.nl/product/george-steck/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Steinway & Sons B211", url: "https://www.schumer.nl/product/steinway-sons-b211-2/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Boston 156 Performance Edition", url: "https://www.schumer.nl/product/boston-156/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
-  { name: "Yamaha C6X Enspire Pro Silent", url: "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/", priceRange: '15k+', isSilent: true, condition: 'new', type: 'vleugel' },
-  { name: "C. Bechstein Vleugel", url: "https://www.schumer.nl/product/c-bechstein/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
   { name: "Blüthner Meestervleugel", url: "https://www.schumer.nl/product/bluthner/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Schimmel 208T", url: "https://www.schumer.nl/product/schimmel-208t/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Schimmel 174T", url: "https://www.schumer.nl/product/schimmel-174t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "Yamaha C6X Enspire Pro Silent", url: "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/", priceRange: '15k+', isSilent: true, condition: 'new', type: 'vleugel' },
   { name: "Yamaha C3 Classic", url: "https://www.schumer.nl/product/yamaha-c3/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "W. Hoffmann 190 Professional", url: "https://www.schumer.nl/product/w-hoffmann-190/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
+  { name: "George Steck Baby Grand", url: "https://www.schumer.nl/product/george-steck/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "Boston 156 Performance Edition", url: "https://www.schumer.nl/product/boston-156/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
+  { name: "Schimmel 208T", url: "https://www.schumer.nl/product/schimmel-208t/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "Grotrian-Steinweg Vleugel", url: "https://www.schumer.nl/product/grotrian-steinweg-2/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
   { name: "C. Bechstein B203 Premium", url: "https://www.schumer.nl/product/c-bechstein-b203-2/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "W. Hoffmann 190 Professional", url: "https://www.schumer.nl/product/w-hoffmann-190/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' }
+  { name: "Schimmel 174T", url: "https://www.schumer.nl/product/schimmel-174t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'vleugel' },
+  { name: "C. Bechstein Vleugel", url: "https://www.schumer.nl/product/c-bechstein/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' }
 ];
 
 const findBestMatches = (config: UserConfig): PianoProduct[] => {
@@ -111,12 +113,14 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
   };
 
   // AI Verrijking (veilig verpakt)
+  const apiKey = process.env.API_KEY;
   if (!apiKey || apiKey === "undefined" || apiKey.length < 10) {
     console.warn("Geen geldige API key gevonden, gebruik lokale fallback.");
     return defaultResult;
   }
 
   try {
+    const ai = new GoogleGenAI({ apiKey });
     const productsContext = bestMatches.map(p => `- ${p.name} (URL: ${p.url})`).join('\n');
 
     const prompt = `

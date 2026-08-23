@@ -44,9 +44,9 @@ const App: React.FC = () => {
             intro: "Op basis van uw voorkeuren hebben wij deze instrumenten uit onze collectie voor u geselecteerd. Kom gerust langs in de showroom om ze te bespelen.",
             recommendations: [
               {
-                model: config.instrumentType === 'vleugel' ? "Yamaha C3X Conservatory" : "Yamaha U1 Professional",
-                motivation: "Een van onze meest gevraagde modellen, bekend om zijn ongekende kwaliteit en waardebehoud.",
-                link: config.instrumentType === 'vleugel' ? "https://www.schumer.nl/product/yamaha-c3x/" : "https://www.schumer.nl/product/yamaha-u1-2/",
+                model: config.instrumentType === 'vleugel' ? "Schimmel CC 213 T" : "Yamaha U1 Professional",
+                motivation: "Een van onze meest gewraagde modellen, bekend om zijn ongekende kwaliteit en waardebehoud.",
+                link: config.instrumentType === 'vleugel' ? "https://www.schumer.nl/product/schimmel-cc-213-t/" : "https://www.schumer.nl/product/yamaha-u1-2/",
                 type: 'product',
                 ctaText: 'Bekijk model'
               }
