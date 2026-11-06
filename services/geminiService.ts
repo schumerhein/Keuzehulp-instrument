@@ -2,85 +2,66 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { UserConfig, ConfigResult, Recommendation, Budget, PianoProduct } from "../types";
 
-const PRODUCTS: PianoProduct[] = [
-  // Akoestische piano's (Uprights)
-  { name: "Yamaha B1 SG2 Silent", url: "https://www.schumer.nl/product/yamaha-b1-sg2-silent/", priceRange: '3-7.5k', isSilent: true, condition: 'used', type: 'acoustic' },
-  { name: "Rippen Maestro", url: "https://www.schumer.nl/product/rippen-maestro/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Rippen Largo", url: "https://www.schumer.nl/product/rippen-largo/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Schimmel 118 T", url: "https://www.schumer.nl/product/schimmel-118-t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Petrof 131 E1", url: "https://www.schumer.nl/product/petrof-131-e1/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Petrof 118 P1", url: "https://www.schumer.nl/product/petrof-118-p1/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Schimmel 116 S", url: "https://www.schumer.nl/product/schimmel-116-s/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Ritmüller UP 117 NS Nikkel", url: "https://www.schumer.nl/product/ritmuller-up-117-ns-nikkel/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Ibach 116", url: "https://www.schumer.nl/product/ibach-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Grotrian-Steinweg 112 Vintage", url: "https://www.schumer.nl/product/grotrian-steinweg-112-vintage/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Yamaha U3 Zwart Hoogglans", url: "https://www.schumer.nl/product/yamaha-u3-zwart-hoogglans/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Schimmel C 120T", url: "https://www.schumer.nl/product/schimmel-c-120t/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Yamaha U1 Professional", url: "https://www.schumer.nl/product/yamaha-u1-2/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Wilh. Steinberg 118", url: "https://www.schumer.nl/product/wilh-steinberg-118/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Seiler 122 Konsole Silent", url: "https://www.schumer.nl/product/seiler-122-konsole-met-yamaha-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
-  { name: "Römhildt Piano", url: "https://www.schumer.nl/product/romhildt/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Yamaha U1 Silent", url: "https://www.schumer.nl/product/yamaha-u1-silent/", priceRange: '7.5-15k', isSilent: true, condition: 'used', type: 'acoustic' },
-  { name: "Schumer UP-117M", url: "https://www.schumer.nl/product/schumer-up-117m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Grotrian Steinweg 4", url: "https://www.schumer.nl/product/grotrian-steinweg-4/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Petrof 118 G1", url: "https://www.schumer.nl/product/petrof-118-g1/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Eterna ER30", url: "https://www.schumer.nl/product/eterna-er30/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Seiler 116", url: "https://www.schumer.nl/product/seiler-116/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Rameau Piano", url: "https://www.schumer.nl/product/rameau/", priceRange: '1-3k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Schumer UP-118M", url: "https://www.schumer.nl/product/schumer-up-118m/", priceRange: '3-7.5k', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Schimmel 130T", url: "https://www.schumer.nl/product/schimmel-130t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'acoustic' },
-  { name: "Schimmel C 130T", url: "https://www.schumer.nl/product/schimmel-c-130t/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'acoustic' },
-  { name: "Wilh. Steinberg Upright", url: "https://www.schumer.nl/product/wilh-steinberg/", priceRange: '7.5-15k', isSilent: false, condition: 'new', type: 'acoustic' },
+const INVENTORY_URL = "https://www.schumer.nl/wp-json/schumer/v1/keuzehulp-instrumenten";
 
-  // Vleugels (Grands)
-  { name: "Schimmel CC 213 T", url: "https://www.schumer.nl/product/schimmel-cc-213-t/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Steinway & Sons B211", url: "https://www.schumer.nl/product/steinway-sons-b211/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Bösendorfer 200", url: "https://www.schumer.nl/product/bosendorfer-200/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Blüthner Meestervleugel", url: "https://www.schumer.nl/product/bluthner/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Yamaha C6X Enspire Pro Silent", url: "https://www.schumer.nl/product/yamaha-c6x-enspire-pro-silent/", priceRange: '15k+', isSilent: true, condition: 'new', type: 'vleugel' },
-  { name: "Yamaha C3 Classic", url: "https://www.schumer.nl/product/yamaha-c3/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "W. Hoffmann 190 Professional", url: "https://www.schumer.nl/product/w-hoffmann-190/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
-  { name: "George Steck Baby Grand", url: "https://www.schumer.nl/product/george-steck/", priceRange: '3-7.5k', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Boston 156 Performance Edition", url: "https://www.schumer.nl/product/boston-156/", priceRange: '15k+', isSilent: false, condition: 'new', type: 'vleugel' },
-  { name: "Schimmel 208T", url: "https://www.schumer.nl/product/schimmel-208t/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Grotrian-Steinweg Vleugel", url: "https://www.schumer.nl/product/grotrian-steinweg-2/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "C. Bechstein B203 Premium", url: "https://www.schumer.nl/product/c-bechstein-b203-2/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "Schimmel 174T", url: "https://www.schumer.nl/product/schimmel-174t/", priceRange: '7.5-15k', isSilent: false, condition: 'used', type: 'vleugel' },
-  { name: "C. Bechstein Vleugel", url: "https://www.schumer.nl/product/c-bechstein/", priceRange: '15k+', isSilent: false, condition: 'used', type: 'vleugel' }
-];
+const budgetFor = (price: number | null): Budget | null => {
+  if (price === null || price <= 0) return null;
+  if (price < 3000) return '1-3k';
+  if (price < 7500) return '3-7.5k';
+  if (price < 15000) return '7.5-15k';
+  return '15k+';
+};
 
-const findBestMatches = (config: UserConfig): PianoProduct[] => {
-  const wantsSilent = config.priorities.includes('silent');
-  const targetType = config.instrumentType === 'vleugel' ? 'vleugel' : 'acoustic';
-  
-  // Stap 1: Filter op type (Strikt)
-  let pool = PRODUCTS.filter(p => p.type === targetType);
-  if (pool.length === 0) pool = PRODUCTS;
-
-  // Stap 2: Probeer Budget + Conditie + Silent
-  let result = pool.filter(p => {
-    const conditionMatch = config.condition === 'any' || p.condition === config.condition;
-    const budgetMatch = p.priceRange === config.budget;
-    const silentMatch = !wantsSilent || p.isSilent;
-    return conditionMatch && budgetMatch && silentMatch;
-  });
-
-  // Stap 3: Laat Silent los
-  if (result.length === 0) {
-    result = pool.filter(p => {
-      const conditionMatch = config.condition === 'any' || p.condition === config.condition;
-      return p.priceRange === config.budget && conditionMatch;
+// Haalt de actuele voorraad live op van schumer.nl. Er is bewust GEEN vaste lijst als terugval:
+// een verkocht of offline gehaald instrument mag nooit meer in het advies terugkomen.
+const fetchInventory = async (): Promise<PianoProduct[]> => {
+  const res = await fetch(INVENTORY_URL, { headers: { Accept: "application/json" } });
+  if (!res.ok) throw new Error(`Voorraad ophalen mislukt (${res.status})`);
+  const data = await res.json();
+  const list = Array.isArray(data?.instrumenten) ? data.instrumenten : [];
+  const products: PianoProduct[] = [];
+  for (const i of list) {
+    const priceRange = budgetFor(typeof i.prijs === 'number' ? i.prijs : null);
+    if (!priceRange || !i.naam || !i.url) continue;
+    products.push({
+      name: i.naam,
+      url: i.url,
+      priceRange,
+      isSilent: !!i.silent,
+      condition: i.conditie === 'new' ? 'new' : 'used',
+      type: i.type === 'vleugel' ? 'vleugel' : 'acoustic',
     });
   }
+  return products;
+};
+
+const BUDGET_ORDER: Budget[] = ['1-3k', '3-7.5k', '7.5-15k', '15k+'];
+
+const findBestMatches = (config: UserConfig, products: PianoProduct[]): PianoProduct[] => {
+  const wantsSilent = config.priorities.includes('silent');
+  const targetType = config.instrumentType === 'vleugel' ? 'vleugel' : 'acoustic';
+
+  // Stap 1: Filter op type (strikt). Is er van dit type niets in voorraad, dan is er niets om te tonen.
+  const pool = products.filter(p => p.type === targetType);
+  if (pool.length === 0) return [];
+
+  const conditionOk = (p: PianoProduct) => config.condition === 'any' || p.condition === config.condition;
+
+  // Stap 2: Budget + Conditie + Silent
+  let result = pool.filter(p => p.priceRange === config.budget && conditionOk(p) && (!wantsSilent || p.isSilent));
+
+  // Stap 3: Laat Silent los
+  if (result.length === 0) result = pool.filter(p => p.priceRange === config.budget && conditionOk(p));
 
   // Stap 4: Laat Conditie los
-  if (result.length === 0) {
-    result = pool.filter(p => p.priceRange === config.budget);
-  }
+  if (result.length === 0) result = pool.filter(p => p.priceRange === config.budget);
 
-  // Stap 5: Laat Budget los (pak de dichtstbijzijnde items uit de pool)
+  // Stap 5: Laat Budget los: neem de instrumenten met het dichtstbijzijnde budget
   if (result.length === 0) {
-    result = pool.slice(0, 3);
+    const target = BUDGET_ORDER.indexOf(config.budget);
+    result = [...pool].sort((a, b) =>
+      Math.abs(BUDGET_ORDER.indexOf(a.priceRange) - target) - Math.abs(BUDGET_ORDER.indexOf(b.priceRange) - target)
+    );
   }
 
   return result.slice(0, 3);
@@ -96,8 +77,24 @@ export const getPianoRecommendations = async (config: UserConfig): Promise<Confi
     };
   }
 
-  // Lokale matches zijn de basis - dit werkt ALTIJD
-  const bestMatches = findBestMatches(config);
+  // Actuele voorraad live van schumer.nl
+  let inventory: PianoProduct[] = [];
+  try {
+    inventory = await fetchInventory();
+  } catch (error) {
+    console.error("Voorraad ophalen mislukt:", error);
+  }
+
+  const bestMatches = findBestMatches(config, inventory);
+
+  if (bestMatches.length === 0) {
+    return {
+      title: "Kom langs in onze showroom",
+      intro: "Op dit moment kunnen wij u online geen passend instrument tonen. Ons aanbod wisselt regelmatig, dus laat u persoonlijk adviseren in onze showroom in Hengelo.",
+      recommendations: [],
+      showShowroomCTA: true
+    };
+  }
   
   const defaultResult: ConfigResult = {
     title: "Uw persoonlijk advies van Schumer",
