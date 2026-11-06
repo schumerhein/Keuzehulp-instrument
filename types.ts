@@ -1,16 +1,16 @@
-export type InstrumentType = 'acoustic' | 'vleugel' | 'digital' | 'unsure';
-export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'professional';
-export type Space = 'small' | 'medium' | 'large' | 'unsure';
-export type Budget = '1-3k' | '3-7.5k' | '7.5-15k' | '15k+';
+export type Player = 'child' | 'starter' | 'experienced' | 'pro';
+export type InstrumentType = 'acoustic' | 'vleugel' | 'unsure';
+export type Space = 'small' | 'medium' | 'large';
+export type Budget = '1-3k' | '3-7.5k' | '7.5-15k' | '15k+' | 'unknown';
 export type Condition = 'new' | 'used' | 'any';
 export type Priority = 'warm_sound' | 'bright_sound' | 'design' | 'compact' | 'value' | 'silent' | 'top_brand';
 
 export interface Answers {
+  player?: Player;
   instrumentType?: InstrumentType;
   space?: Space;
   budget?: Budget;
   condition?: Condition;
-  skillLevel?: SkillLevel;
   priorities: Priority[];
 }
 
@@ -20,7 +20,7 @@ export interface Instrument {
   brand: string;
   url: string;
   price: number;
-  budget: Budget;
+  budget: Exclude<Budget, 'unknown'>;
   condition: 'new' | 'used';
   type: 'acoustic' | 'vleugel';
   silent: boolean;
@@ -39,12 +39,19 @@ export interface Pick {
   label?: string;
 }
 
+export interface Note {
+  title: string;
+  text: string;
+  link?: string;
+  linkLabel?: string;
+}
+
 export interface Advice {
-  kind: 'products' | 'digital' | 'empty';
+  kind: 'products' | 'empty';
   title: string;
   intro: string;
   best?: Pick;
   alternatives: Pick[];
-  typeAdvice?: { title: string; text: string; link: string; linkLabel: string };
+  notes: Note[];
   browse: { url: string; label: string }[];
 }

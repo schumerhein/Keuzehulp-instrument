@@ -1,9 +1,11 @@
-import { Advice, Answers, Budget, Instrument, Pick } from '../types';
+import { Advice, Answers, Budget, Instrument, Note, Pick } from '../types';
 
 export const INVENTORY_URL = 'https://www.schumer.nl/wp-json/schumer/v1/keuzehulp-instrumenten';
 export const SITE = 'https://www.schumer.nl';
 
-export const BUDGETS: { id: Budget; min: number; max: number; label: string }[] = [
+type PriceBudget = Exclude<Budget, 'unknown'>;
+
+export const BUDGETS: { id: PriceBudget; min: number; max: number; label: string }[] = [
   { id: '1-3k', min: 0, max: 3000, label: 'Tot € 3.000' },
   { id: '3-7.5k', min: 3000, max: 7500, label: '€ 3.000 tot € 7.500' },
   { id: '7.5-15k', min: 7500, max: 15000, label: '€ 7.500 tot € 15.000' },
@@ -20,11 +22,12 @@ const TOP_BRANDS = ['Steinway & Sons', 'Bösendorfer', 'C. Bechstein', 'Blüthne
 const WARM_BRANDS = ['Blüthner', 'Bösendorfer', 'Grotrian-Steinweg', 'C. Bechstein', 'Schimmel', 'Sauter', 'Seiler', 'Petrof'];
 const BRIGHT_BRANDS = ['Yamaha', 'Kawai', 'Boston', 'Steinway & Sons'];
 const VALUE_BRANDS = ['Steinway & Sons', 'Bösendorfer', 'C. Bechstein', 'Blüthner', 'Grotrian-Steinweg', 'Yamaha', 'Schimmel', 'Sauter', 'Seiler'];
+const RELIABLE_BRANDS = ['Yamaha', 'Kawai', 'Petrof', 'Schimmel', 'Seiler', 'Grotrian-Steinweg', 'Ibach', 'Sauter', 'Feurich'];
 
 export const euro = (n: number) =>
   new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
-export const budgetOf = (price: number): Budget =>
+export const budgetOf = (price: number): PriceBudget =>
   (BUDGETS.find(b => price >= b.min && price < b.max) || BUDGETS[BUDGETS.length - 1]).id;
 
 const brandOf = (name: string): string => {
@@ -74,6 +77,11 @@ export const fetchInventory = async (): Promise<Instrument[]> => {
 export const typeLabel = (t: 'acoustic' | 'vleugel', plural = false) =>
   t === 'vleugel' ? (plural ? 'vleugels' : 'vleugel') : (plural ? "piano's" : 'piano');
 
+export const lowestPrice = (items: Instrument[], t: 'acoustic' | 'vleugel') => {
+  const p = items.filter(i => i.type === t).map(i => i.price);
+  return p.length ? Math.min(...p) : null;
+};
+
 export const specLine = (i: Instrument) => {
   const parts: string[] = [i.condition === 'new' ? 'Nieuw' : 'Tweedehands'];
   if (i.type === 'vleugel' && i.lengthCm) parts.push(`${i.lengthCm} cm lang`);
@@ -82,11 +90,16 @@ export const specLine = (i: Instrument) => {
   return parts.join(' · ');
 };
 
-/** Welk type adviseren we als de bezoeker twijfelt? */
+const serious = (a: Answers) => a.player === 'experienced' || a.player === 'pro';
+const learner = (a: Answers) => a.player === 'child' || a.player === 'starter';
+
+/** Welk type adviseren we als de bezoeker hulp wil bij de keuze tussen piano en vleugel? */
 const preferredType = (a: Answers): 'acoustic' | 'vleugel' => {
-  const bigBudget = a.budget === '7.5-15k' || a.budget === '15k+';
-  if (a.space === 'large' && bigBudget) return 'vleugel';
-  if (a.space === 'medium' && a.budget === '15k+') return 'vleugel';
+  if (a.space === 'small') return 'acoustic';
+  if (a.budget === '1-3k' || a.budget === '3-7.5k') return 'acoustic';
+  if (a.budget === 'unknown') return a.space === 'large' && serious(a) ? 'vleugel' : 'acoustic';
+  if (a.space === 'large') return 'vleugel';
+  if (a.space === 'medium' && a.budget === '15k+' && serious(a)) return 'vleugel';
   return 'acoustic';
 };
 
@@ -97,21 +110,29 @@ const score = (i: Instrument, a: Answers): Scored | null => {
   let s = 0;
   let overBudget = false;
   const wants = (p: string) => a.priorities.includes(p as any);
-  const b = BUDGETS.find(x => x.id === a.budget) || BUDGETS[1];
+  const b = BUDGETS.find(x => x.id === a.budget);
 
   // Budget: binnen bereik is het beste; iets goedkoper is prima; hooguit 15% erboven als alternatief.
-  if (i.price >= b.min && i.price < b.max) {
-    s += 40;
-    reasons.push({ w: 40, text: 'Past binnen uw budget' });
-  } else if (i.price < b.min) {
-    const gap = (b.min - i.price) / Math.max(b.min, 1);
-    s += Math.max(5, 30 - gap * 60);
-    reasons.push({ w: 20, text: 'Onder uw budget, zodat er ruimte overblijft' });
-  } else if (i.price <= b.max * 1.15) {
-    s += 6;
-    overBudget = true;
+  if (b) {
+    if (i.price >= b.min && i.price < b.max) {
+      s += 40;
+      reasons.push({ w: 40, text: 'Past binnen uw budget' });
+    } else if (i.price < b.min) {
+      const gap = (b.min - i.price) / Math.max(b.min, 1);
+      s += Math.max(5, 30 - gap * 60);
+      reasons.push({ w: 20, text: 'Onder uw budget, zodat er ruimte overblijft' });
+    } else if (i.price <= b.max * 1.15) {
+      s += 6;
+      overBudget = true;
+    } else {
+      return null;
+    }
   } else {
-    return null;
+    // Geen budget gekozen: let op prijs en kwaliteit in verhouding tot de speler.
+    s += 25;
+    if (learner(a)) { if (i.price > 15000) return null; if (i.price > 9000) s -= 15; }
+    if (a.player === 'experienced' && i.price > 25000) s -= 10;
+    if (VALUE_BRANDS.includes(i.brand) || RELIABLE_BRANDS.includes(i.brand)) s += 6;
   }
 
   // Nieuw of tweedehands
@@ -139,7 +160,7 @@ const score = (i: Instrument, a: Answers): Scored | null => {
 
   // Wensen
   if (wants('silent')) {
-    if (i.silent) { s += 30; reasons.push({ w: 30, text: 'Silent-systeem: speel stil met een koptelefoon' }); } else s -= 6;
+    if (i.silent) { s += 30; reasons.push({ w: 30, text: 'Silent-systeem: speel ook stil met een koptelefoon' }); } else s -= 6;
   }
   if (wants('compact')) {
     if (i.type === 'acoustic' && i.heightCm && i.heightCm <= 118) { s += 14; reasons.push({ w: 14, text: `Compact formaat: ${i.heightCm} cm hoog` }); }
@@ -154,13 +175,26 @@ const score = (i: Instrument, a: Answers): Scored | null => {
     else if (i.finish && /hoogglans/i.test(i.finish)) { s += 4; reasons.push({ w: 4, text: `Tijdloze uitstraling in ${i.finish.toLowerCase()}` }); }
   }
 
-  // Speelniveau
-  if (a.skillLevel === 'advanced' || a.skillLevel === 'professional') {
-    if (TOP_BRANDS.includes(i.brand)) { s += 8; if (!wants('top_brand')) reasons.push({ w: 9, text: `${i.brand} is een gerenommeerd merk dat ook op hoog niveau voldoet` }); }
-    if (i.type === 'acoustic' && i.heightCm && i.heightCm >= 120) { s += 6; reasons.push({ w: 7, text: `Grotere kast (${i.heightCm} cm): voller klank en meer dynamiek voor gevorderd spel` }); }
+  // Wie gaat er spelen?
+  if (learner(a)) {
+    if (RELIABLE_BRANDS.includes(i.brand) && i.price <= 9000) {
+      s += 8;
+      reasons.push({ w: 9, text: a.player === 'child'
+        ? `${i.brand} is een betrouwbaar merk met een gelijkmatige aanslag: fijn om op te leren`
+        : `${i.brand} is een betrouwbaar merk om mee te beginnen of weer op te starten` });
+    }
+    if (i.price > 12000) s -= 6;
+  }
+  if (a.player === 'experienced') {
+    if (TOP_BRANDS.includes(i.brand)) { s += 6; if (!wants('top_brand')) reasons.push({ w: 9, text: `${i.brand} is een gerenommeerd merk dat met uw spel meegroeit` }); }
+    if (i.type === 'acoustic' && i.heightCm && i.heightCm >= 120) { s += 4; reasons.push({ w: 6, text: `Grotere kast (${i.heightCm} cm): voller klank en meer dynamiek` }); }
+    if (i.type === 'vleugel' && i.lengthCm && i.lengthCm >= 170) s += 4;
+  }
+  if (a.player === 'pro') {
+    if (TOP_BRANDS.includes(i.brand)) { s += 10; if (!wants('top_brand')) reasons.push({ w: 9, text: `${i.brand} is een gerenommeerd merk dat ook op hoog niveau voldoet` }); }
+    if (i.type === 'acoustic' && i.heightCm && i.heightCm >= 120) { s += 6; reasons.push({ w: 7, text: `Grotere kast (${i.heightCm} cm): voller klank en meer dynamiek` }); }
     if (i.type === 'vleugel' && i.lengthCm && i.lengthCm >= 180) { s += 6; if (a.space !== 'large') reasons.push({ w: 7, text: `Met ${i.lengthCm} cm lengte veel klankvolume en een nauwkeurige aanslag` }); }
   }
-  if (a.skillLevel === 'beginner' && i.price < (b.min + Math.min(b.max, b.min * 3)) / 2) s += 4;
 
   return { instrument: i, score: s, reasons, overBudget };
 };
@@ -170,92 +204,124 @@ const toPick = (x: Scored, label?: string): Pick => {
   return { instrument: x.instrument, reasons: reasons.slice(0, 4), overBudget: x.overBudget, label };
 };
 
+const mid = (a: Answers) => {
+  const b = BUDGETS.find(x => x.id === a.budget);
+  if (!b) return learner(a) ? 5000 : 9000;
+  return b.max === Infinity ? b.min * 1.5 : (b.min + b.max) / 2;
+};
+
 const rank = (items: Instrument[], a: Answers) =>
   items
     .map(i => score(i, a))
     .filter((x): x is Scored => !!x)
     .sort((p, q) => q.score - p.score || Math.abs(p.instrument.price - mid(a)) - Math.abs(q.instrument.price - mid(a)));
 
-const mid = (a: Answers) => {
-  const b = BUDGETS.find(x => x.id === a.budget) || BUDGETS[1];
-  return b.max === Infinity ? b.min * 1.5 : (b.min + b.max) / 2;
+const PLAYER_TEXT: Record<string, string> = {
+  child: 'Voor een kind dat piano leert',
+  starter: 'Voor wie begint of het spelen weer oppakt',
+  experienced: 'Voor een ervaren pianist',
+  pro: 'Voor spel op hoog niveau',
+};
+const SPACE_TEXT: Record<string, string> = {
+  small: 'in een appartement of met buren dichtbij',
+  medium: 'in een gemiddelde woonkamer',
+  large: 'in een ruime kamer',
 };
 
-const SPACE_TEXT: Record<string, string> = {
-  small: 'een kleinere ruimte',
-  medium: 'een gemiddelde woonkamer',
-  large: 'een ruime kamer',
-  unsure: 'uw woning',
+const KB = {
+  vs: { link: `${SITE}/kennisbank/vleugel-vs-piano/`, linkLabel: 'Lees de verschillen tussen piano en vleugel' },
+  pianoPrice: { link: `${SITE}/kennisbank/wat-kost-een-piano/`, linkLabel: 'Lees wat een piano kost' },
+  grandPrice: { link: `${SITE}/kennisbank/wat-kost-een-vleugel/`, linkLabel: 'Lees wat een vleugel kost' },
+  apartment: { link: `${SITE}/kennisbank/piano-in-appartement/`, linkLabel: 'Lees meer over een piano in een appartement' },
 };
 
 export const buildAdvice = (a: Answers, items: Instrument[]): Advice => {
-  const browse = [
+  const browseAll = [
     { url: `${SITE}/pianos/`, label: "Bekijk alle piano's" },
     { url: `${SITE}/vleugels/`, label: 'Bekijk alle vleugels' },
   ];
+  const notes: Note[] = [];
+  const helpChoose = a.instrumentType === 'unsure' || !a.instrumentType;
+  let type: 'acoustic' | 'vleugel' = helpChoose ? preferredType(a) : (a.instrumentType as 'acoustic' | 'vleugel');
+  let ranked = rank(items.filter(i => i.type === type), a);
 
-  if (a.instrumentType === 'digital') {
-    return {
-      kind: 'digital',
-      title: 'Digitale piano: kom ze vergelijken',
-      intro: 'Digitale piano’s tonen wij niet in deze online keuzehulp. In onze showroom in Hengelo vergelijkt u de modellen naast elkaar, en ziet u ook of een silent piano voor u een goed alternatief is: een akoestische piano die u ook stil met een koptelefoon kunt bespelen.',
-      alternatives: [],
-      browse,
-    };
+  // Vleugel gezocht, maar niets binnen bereik: eerlijk zeggen en passende piano's tonen.
+  if (!ranked.length && type === 'vleugel') {
+    const from = lowestPrice(items, 'vleugel');
+    const pianos = rank(items.filter(i => i.type === 'acoustic'), a);
+    if (pianos.length) {
+      notes.push({
+        title: 'Binnen dit budget adviseren wij een piano',
+        text: `Een goede vleugel is bij ons op voorraad vanaf ${from ? euro(from) : 'circa € 6.500'}. Binnen uw budget haalt u met een staande piano de meeste kwaliteit in huis.`,
+        ...KB.grandPrice,
+      });
+      type = 'acoustic';
+      ranked = pianos;
+    }
   }
 
-  const unsure = a.instrumentType === 'unsure' || !a.instrumentType;
-  const type: 'acoustic' | 'vleugel' = unsure ? preferredType(a) : (a.instrumentType as 'acoustic' | 'vleugel');
-  const ranked = rank(items.filter(i => i.type === type), a);
+  const browse = type === 'vleugel' ? [browseAll[1], browseAll[0]] : browseAll;
 
-  if (ranked.length === 0) {
+  if (!ranked.length) {
     return {
       kind: 'empty',
       title: 'Wij adviseren u graag persoonlijk',
       intro: `Op dit moment hebben wij geen ${typeLabel(type)} op voorraad die goed past bij deze combinatie van wensen. Ons aanbod wisselt regelmatig. Neem contact op, dan zoeken wij met u mee of laten wij u weten wanneer er een passend instrument binnenkomt.`,
       alternatives: [],
-      browse: type === 'vleugel' ? [browse[1], browse[0]] : browse,
+      notes,
+      browse,
     };
   }
 
   const best = toPick(ranked[0], 'Beste match');
   let alternatives: Pick[] = ranked.slice(1, 3).map(x => toPick(x, 'Alternatief'));
 
-  let typeAdvice: Advice['typeAdvice'];
-  if (unsure) {
+  if (helpChoose) {
     const other: 'acoustic' | 'vleugel' = type === 'vleugel' ? 'acoustic' : 'vleugel';
     const otherBest = rank(items.filter(i => i.type === other), a)[0];
-    if (otherBest) alternatives = [alternatives[0], toPick(otherBest, `Ter vergelijking: een ${typeLabel(other)}`)].filter(Boolean) as Pick[];
-    typeAdvice = type === 'vleugel'
+    if (otherBest && !(other === 'vleugel' && a.space === 'small')) {
+      alternatives = [alternatives[0], toPick(otherBest, `Ter vergelijking: een ${typeLabel(other)}`)].filter(Boolean) as Pick[];
+    }
+    notes.unshift(type === 'vleugel'
       ? {
           title: 'Ons advies: een vleugel',
-          text: 'Met uw ruimte en budget komt een vleugel goed tot zijn recht. Een vleugel klinkt voller, de aanslag herhaalt sneller en hij is een blikvanger in de kamer. Reken op minimaal 1,5 bij 2 meter vloer plus ruimte voor de kruk.',
-          link: `${SITE}/kennisbank/vleugel-vs-piano/`,
-          linkLabel: 'Lees de verschillen tussen piano en vleugel',
+          text: 'Met uw ruimte en budget komt een vleugel goed tot zijn recht. Een vleugel klinkt voller, de aanslag herhaalt sneller en hij is een blikvanger in de kamer. Reken op minimaal 1,5 bij 2 meter vloer, plus ruimte voor de kruk.',
+          ...KB.vs,
         }
       : {
           title: 'Ons advies: een piano',
-          text: a.space === 'large'
-            ? 'Binnen uw budget biedt een goede staande piano de meeste kwaliteit. Een vleugel van vergelijkbare klasse begint bij ons rond de € 6.500, maar vraagt ook duidelijk meer ruimte.'
-            : 'Een staande piano neemt weinig vloerruimte in (circa 150 bij 60 cm) en biedt binnen uw budget de meeste kwaliteit. Een vleugel vraagt al snel 1,5 bij 2 meter vloer plus ruimte voor de kruk.',
-          link: `${SITE}/kennisbank/vleugel-vs-piano/`,
-          linkLabel: 'Lees de verschillen tussen piano en vleugel',
-        };
+          text: a.space === 'small'
+            ? 'Een staande piano neemt weinig vloerruimte in, circa 150 bij 60 cm, en past daarmee goed in een kleinere woning. Een vleugel vraagt al snel 1,5 bij 2 meter vloer, plus ruimte voor de kruk.'
+            : 'Binnen uw situatie biedt een goede staande piano de meeste kwaliteit voor uw geld. Een vleugel klinkt voller, maar vraagt ook duidelijk meer ruimte en budget.',
+          ...KB.vs,
+        });
   }
 
-  const budgetText = (BUDGETS.find(b => b.id === a.budget)?.label || '').toLowerCase();
-  const lead = unsure
-    ? `Op basis van uw ruimte en budget adviseren wij een ${typeLabel(type)} voor ${SPACE_TEXT[a.space || 'unsure']}`
-    : `U zoekt een ${typeLabel(type)} voor ${SPACE_TEXT[a.space || 'unsure']}`;
-  const intro = `${lead}${budgetText ? `, met een budget ${budgetText.startsWith('tot') || budgetText.startsWith('vanaf') ? budgetText : `van ${budgetText}`}` : ''}. Uit onze actuele voorraad passen deze instrumenten het best bij uw wensen.`;
+  if (a.budget === 'unknown') {
+    const p = lowestPrice(items, 'acoustic');
+    const v = lowestPrice(items, 'vleugel');
+    notes.push({
+      title: 'Wat kost een goed instrument?',
+      text: `Een goede piano is bij ons op voorraad vanaf ${p ? euro(p) : 'circa € 2.300'}${v ? `, een vleugel vanaf ${euro(v)}` : ''}. Hieronder ziet u de instrumenten met de beste verhouding tussen prijs en kwaliteit voor uw situatie.`,
+      ...(type === 'vleugel' ? KB.grandPrice : KB.pianoPrice),
+    });
+  }
 
-  return {
-    kind: 'products',
-    title: 'Onze beste match voor u',
-    intro,
-    best,
-    alternatives,
-    typeAdvice,
-    browse: type === 'vleugel' ? [browse[1], browse[0]] : browse,
-  };
+  if (a.space === 'small' && !a.priorities.includes('silent')) {
+    notes.push({
+      title: 'Tip voor appartementen',
+      text: 'Met een silent-systeem speelt u op elk moment van de dag stil met een koptelefoon, en klinkt de piano gewoon akoestisch als dat uitkomt.',
+      ...KB.apartment,
+    });
+  }
+
+  const b = BUDGETS.find(x => x.id === a.budget);
+  const ctx = [
+    a.space ? SPACE_TEXT[a.space] : '',
+    b ? `met een budget ${b.label.startsWith('Tot') || b.label.startsWith('Vanaf') ? b.label.toLowerCase() : `van ${b.label}`}` : '',
+  ].filter(Boolean).join(' en ');
+  const who = PLAYER_TEXT[a.player || ''] || 'Voor uw situatie';
+  const intro = `${who}${ctx ? `, ${ctx},` : ''} passen deze ${typeLabel(type, true)} uit onze actuele voorraad het best. U kunt ze proefspelen in onze showroom in Hengelo.`;
+
+  return { kind: 'products', title: 'Onze beste match voor u', intro, best, alternatives, notes, browse };
 };

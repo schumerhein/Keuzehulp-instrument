@@ -115,13 +115,13 @@ const Results: React.FC<ResultsProps> = ({ advice, status, summary, onEdit, onRe
         </ul>
       )}
 
-      {advice.typeAdvice && (
-        <aside className="kh-note">
-          <p className="kh-note__title">{advice.typeAdvice.title}</p>
-          <p>{advice.typeAdvice.text}</p>
-          <a className="kh-link" href={advice.typeAdvice.link} target="_top">{advice.typeAdvice.linkLabel}</a>
+      {advice.notes.map(n => (
+        <aside className="kh-note" key={n.title}>
+          <p className="kh-note__title">{n.title}</p>
+          <p>{n.text}</p>
+          {n.link && <a className="kh-link" href={n.link} target="_top">{n.linkLabel}</a>}
         </aside>
-      )}
+      ))}
 
       {advice.best && <Card pick={advice.best} featured />}
 

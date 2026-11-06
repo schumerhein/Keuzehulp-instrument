@@ -2,11 +2,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Step, { Option } from './components/Step';
 import Results from './components/Results';
 import { ICONS } from './constants';
-import { Advice, Answers, Budget, Condition, Instrument, InstrumentType, Priority, SkillLevel, Space } from './types';
-import { BUDGETS, buildAdvice, euro, fetchInventory } from './services/inventory';
+import { Advice, Answers, Budget, Condition, Instrument, InstrumentType, Player, Priority, Space } from './types';
+import { BUDGETS, buildAdvice, euro, fetchInventory, lowestPrice } from './services/inventory';
 
-type StepId = 'type' | 'space' | 'budget' | 'condition' | 'skill' | 'wishes';
-const STEPS: StepId[] = ['type', 'space', 'budget', 'condition', 'skill', 'wishes'];
+type StepId = 'player' | 'type' | 'space' | 'budget' | 'condition' | 'wishes';
+const STEPS: StepId[] = ['player', 'type', 'space', 'budget', 'condition', 'wishes'];
 const MAX_WISHES = 3;
 
 /** Laat de iframe op schumer.nl meegroeien en, bij een nieuwe stap, terugscrollen naar de keuzehulp. */
@@ -17,13 +17,13 @@ const post = (msg: Record<string, unknown>) => {
 };
 
 const LABELS = {
-  type: { acoustic: 'Piano', vleugel: 'Vleugel', digital: 'Digitale piano', unsure: 'Twijfel nog' },
-  space: { small: 'Kleine ruimte', medium: 'Gemiddelde woonkamer', large: 'Ruime kamer', unsure: 'Nog onbekend' },
+  player: { child: 'Een kind', starter: 'Beginner of herstarter', experienced: 'Ervaren', pro: 'Hoog niveau' },
+  type: { acoustic: 'Piano', vleugel: 'Vleugel', unsure: 'Help mij kiezen' },
+  space: { small: 'Appartement of buren dichtbij', medium: 'Gemiddelde woonkamer', large: 'Ruime kamer' },
   condition: { new: 'Nieuw', used: 'Tweedehands', any: 'Geen voorkeur' },
-  skill: { beginner: 'Beginner', intermediate: 'Gevorderd', advanced: 'Ver gevorderd', professional: 'Professioneel' },
   wishes: {
-    warm_sound: 'Warme klank', bright_sound: 'Heldere klank', design: 'Uitstraling', compact: 'Compact formaat',
-    value: 'Waardebehoud', silent: 'Stil spelen', top_brand: 'Topmerk',
+    silent: 'Stil spelen', warm_sound: 'Warme klank', bright_sound: 'Heldere klank', top_brand: 'Topmerk',
+    value: 'Waardebehoud', compact: 'Zo compact mogelijk', design: 'Opvallende uitvoering',
   },
 } as const;
 
@@ -33,6 +33,8 @@ const App: React.FC = () => {
   const [answers, setAnswers] = useState<Answers>({ priorities: [] });
   const [inventory, setInventory] = useState<Instrument[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  // Wijzigt de bezoeker één antwoord vanaf de adviespagina, dan gaat hij daarna direct terug naar het advies.
+  const [editing, setEditing] = useState(false);
 
   const load = useCallback(() => {
     setStatus('loading');
@@ -61,20 +63,16 @@ const App: React.FC = () => {
     post({ type: 'scrollTop' });
   };
   const finish = () => {
+    setEditing(false);
     setShowResults(true);
     post({ type: 'scrollTop' });
   };
-  const next = (from: number, a: Answers) => {
-    if (a.instrumentType === 'digital') return finish();
-    if (from >= STEPS.length - 1) return finish();
-    goTo(from + 1);
-  };
 
   const choose = <K extends keyof Answers>(key: K, value: Answers[K]) => {
-    const updated = { ...answers, [key]: value };
-    setAnswers(updated);
+    setAnswers(prev => ({ ...prev, [key]: value }));
     // Korte pauze zodat de bezoeker de selectie ziet, daarna automatisch door.
-    window.setTimeout(() => next(stepIndex, updated), 180);
+    const from = stepIndex;
+    window.setTimeout(() => (editing || from >= STEPS.length - 1 ? finish() : goTo(from + 1)), 180);
   };
 
   const toggleWish = (id: Priority) => {
@@ -86,88 +84,99 @@ const App: React.FC = () => {
     });
   };
 
+  const edit = (i: number) => {
+    setEditing(true);
+    goTo(i);
+  };
+
   const reset = () => {
+    setEditing(false);
     setAnswers({ priorities: [] });
     goTo(0);
   };
 
   // Aantallen uit de actuele voorraad, zodat de bezoeker direct ziet wat er beschikbaar is.
-  const typeFilter = (i: Instrument) =>
+  const ready = status === 'ready';
+  const inType = inventory.filter(i =>
     answers.instrumentType === 'acoustic' ? i.type === 'acoustic'
-      : answers.instrumentType === 'vleugel' ? i.type === 'vleugel' : true;
-  const count = (n: number) => (status === 'ready' ? (n ? `${n} op voorraad` : 'Nu niet op voorraad') : undefined);
-  const from = (items: Instrument[]) =>
-    status !== 'ready' ? undefined
-      : items.length ? `${items.length} op voorraad, vanaf ${euro(Math.min(...items.map(i => i.price)))}` : 'Nu niet op voorraad';
-
-  const pianos = inventory.filter(i => i.type === 'acoustic');
-  const grands = inventory.filter(i => i.type === 'vleugel');
-  const inType = inventory.filter(typeFilter);
-  const inBudget = inType.filter(i => i.budget === answers.budget);
+      : answers.instrumentType === 'vleugel' ? i.type === 'vleugel' : true);
+  const inBudget = answers.budget && answers.budget !== 'unknown' ? inType.filter(i => i.budget === answers.budget) : inType;
+  const count = (n: number) => (ready ? (n ? `${n} op voorraad` : 'Nu niet op voorraad') : undefined);
+  const fromText = (t: 'acoustic' | 'vleugel') => {
+    if (!ready) return undefined;
+    const n = inventory.filter(i => i.type === t).length;
+    const low = lowestPrice(inventory, t);
+    return n && low ? `${n} op voorraad, vanaf ${euro(low)}` : 'Nu niet op voorraad';
+  };
 
   const advice: Advice | null = useMemo(
-    () => (showResults && status === 'ready' ? buildAdvice(answers, inventory) : null),
-    [showResults, status, answers, inventory],
+    () => (showResults && ready ? buildAdvice(answers, inventory) : null),
+    [showResults, ready, answers, inventory],
   );
 
   const step = STEPS[stepIndex];
   const isGrand = answers.instrumentType === 'vleugel';
+  const lowPiano = lowestPrice(inventory, 'acoustic');
+  const lowGrand = lowestPrice(inventory, 'vleugel');
 
   let content: React.ReactNode = null;
   if (!showResults) {
-    if (step === 'type') {
+    if (step === 'player') {
       const opts: Option[] = [
-        { id: 'acoustic', label: 'Piano', description: 'Staande piano. Compact, veelzijdig en geschikt voor vrijwel elke woonkamer.', meta: from(pianos), icon: <ICONS.AcousticPiano /> },
-        { id: 'vleugel', label: 'Vleugel', description: 'Voller klank en een snellere aanslag. Vraagt meer ruimte.', meta: from(grands), icon: <ICONS.GrandPiano /> },
-        { id: 'digital', label: 'Digitale piano', description: 'Volume regelbaar en geen stemmen nodig. Te vergelijken in onze showroom.', icon: <ICONS.Digital /> },
-        { id: 'unsure', label: 'Ik twijfel nog', description: 'Wij adviseren u op basis van uw ruimte en budget.', icon: <ICONS.Question /> },
+        { id: 'child', label: 'Voor een kind', description: 'Dat net begint of al les heeft.', icon: <ICONS.SkillBeginner /> },
+        { id: 'starter', label: 'Voor mezelf: ik begin of pak het weer op', description: 'Na een tijd niet gespeeld te hebben, of helemaal nieuw.', icon: <ICONS.SkillIntermediate /> },
+        { id: 'experienced', label: 'Voor mezelf: ik speel al jaren', description: 'Ik zoek een instrument dat met mij meegroeit.', icon: <ICONS.SkillAdvanced /> },
+        { id: 'pro', label: 'Op hoog niveau', description: 'Conservatorium, lesgeven of optreden.', icon: <ICONS.SkillProfessional /> },
       ];
-      content = <Step question="Welk instrument zoekt u?" hint="Beantwoord zes korte vragen. U ziet direct welke instrumenten uit onze actuele voorraad het best bij u passen." options={opts} selected={answers.instrumentType} onSelect={id => choose('instrumentType', id as InstrumentType)} />;
+      content = <Step question="Voor wie is het instrument?" hint="Zes korte vragen, daarna ziet u direct welke instrumenten uit onze actuele voorraad het best bij u passen. Spelen er meerdere mensen? Kies dan wie het meest speelt." options={opts} selected={answers.player} onSelect={id => choose('player', id as Player)} />;
+    } else if (step === 'type') {
+      const opts: Option[] = [
+        { id: 'acoustic', label: 'Een piano', description: 'Staande piano. Neemt weinig ruimte in en past in vrijwel elk interieur.', meta: fromText('acoustic'), icon: <ICONS.AcousticPiano /> },
+        { id: 'vleugel', label: 'Een vleugel', description: 'Voller klank en een snellere aanslag. Vraagt meer ruimte en budget.', meta: fromText('vleugel'), icon: <ICONS.GrandPiano /> },
+        { id: 'unsure', label: 'Help mij kiezen', description: 'Wij adviseren op basis van uw ruimte en budget.', icon: <ICONS.Question /> },
+      ];
+      content = <Step question="Piano of vleugel?" options={opts} selected={answers.instrumentType} onSelect={id => choose('instrumentType', id as InstrumentType)} />;
     } else if (step === 'space') {
       const opts: Option[] = [
-        { id: 'small', label: 'Kleine ruimte', description: 'Bijvoorbeeld een appartement of studeerkamer.', icon: <ICONS.SpaceSmall /> },
-        { id: 'medium', label: 'Gemiddelde woonkamer', icon: <ICONS.SpaceMedium /> },
-        { id: 'large', label: 'Ruime woonkamer of muziekkamer', icon: <ICONS.SpaceLarge /> },
-        { id: 'unsure', label: 'Weet ik nog niet', icon: <ICONS.Question /> },
+        { id: 'small', label: 'In een appartement of met buren dichtbij', description: 'Formaat en geluid tellen hier extra mee.', icon: <ICONS.SpaceSmall /> },
+        { id: 'medium', label: 'In een gemiddelde woonkamer', icon: <ICONS.SpaceMedium /> },
+        { id: 'large', label: 'In een ruime woonkamer of muziekkamer', icon: <ICONS.SpaceLarge /> },
       ];
-      content = <Step question="Waar komt het instrument te staan?" hint={isGrand ? 'Een vleugel is 140 tot 290 cm lang en circa 150 cm breed. Reken ook op ruimte voor de kruk.' : 'Een staande piano is circa 150 cm breed en 60 cm diep. De hoogte varieert van ongeveer 110 tot 135 cm.'} options={opts} selected={answers.space} onSelect={id => choose('space', id as Space)} />;
+      content = <Step question="Waar komt het instrument te staan?" hint={isGrand ? 'Een vleugel is 140 tot 290 cm lang en circa 150 cm breed. Reken ook op ruimte voor de kruk.' : 'Een staande piano is circa 150 cm breed en 60 cm diep. Een vleugel vraagt al snel 1,5 bij 2 meter.'} options={opts} selected={answers.space} onSelect={id => choose('space', id as Space)} />;
     } else if (step === 'budget') {
       const icons = [<ICONS.Money1 />, <ICONS.Money2 />, <ICONS.Money3 />, <ICONS.Money4 />];
-      const opts: Option[] = BUDGETS.map((b, n) => ({
-        id: b.id, label: b.label, icon: icons[n], meta: count(inType.filter(i => i.budget === b.id).length),
-      }));
-      content = <Step question="Wat is uw budget?" hint="Een indicatie is genoeg. Wij tonen ook instrumenten die net iets goedkoper zijn." options={opts} selected={answers.budget} onSelect={id => choose('budget', id as Budget)} />;
+      const opts: Option[] = [
+        ...BUDGETS.map((b, n) => ({ id: b.id, label: b.label, icon: icons[n], meta: count(inType.filter(i => i.budget === b.id).length) })),
+        { id: 'unknown', label: 'Weet ik nog niet', description: 'Wij tonen de beste prijs-kwaliteitverhouding voor uw situatie.', icon: <ICONS.Question /> },
+      ];
+      const hint = ready && lowPiano
+        ? `Een goede piano is bij ons op voorraad vanaf ${euro(lowPiano)}${lowGrand ? `, een vleugel vanaf ${euro(lowGrand)}` : ''}.`
+        : 'Een indicatie is genoeg.';
+      content = <Step question="Wat wilt u ongeveer uitgeven?" hint={hint} options={opts} selected={answers.budget} onSelect={id => choose('budget', id as Budget)} />;
     } else if (step === 'condition') {
       const opts: Option[] = [
+        { id: 'used', label: 'Tweedehands', description: 'Gecontroleerd en speelklaar gemaakt in onze eigen werkplaats. Vaak meer kwaliteit voor uw budget.', icon: <ICONS.ConditionUsed />, meta: count(inBudget.filter(i => i.condition === 'used').length) },
         { id: 'new', label: 'Nieuw', icon: <ICONS.ConditionNew />, meta: count(inBudget.filter(i => i.condition === 'new').length) },
-        { id: 'used', label: 'Tweedehands', description: 'Gecontroleerd en speelklaar gemaakt in onze eigen werkplaats.', icon: <ICONS.ConditionUsed />, meta: count(inBudget.filter(i => i.condition === 'used').length) },
-        { id: 'any', label: 'Maakt niet uit', icon: <ICONS.Sparkle />, meta: count(inBudget.length) },
+        { id: 'any', label: 'Maakt niet uit', description: 'Wij kijken naar de beste match.', icon: <ICONS.Sparkle />, meta: count(inBudget.length) },
       ];
       content = <Step question="Nieuw of tweedehands?" options={opts} selected={answers.condition} onSelect={id => choose('condition', id as Condition)} />;
-    } else if (step === 'skill') {
-      const opts: Option[] = [
-        { id: 'beginner', label: 'Beginner', description: 'Ik begin net of speel nog niet lang.', icon: <ICONS.SkillBeginner /> },
-        { id: 'intermediate', label: 'Gevorderd', description: 'Ik speel al een aantal jaren.', icon: <ICONS.SkillIntermediate /> },
-        { id: 'advanced', label: 'Ver gevorderd', description: 'Hoog niveau of conservatorium.', icon: <ICONS.SkillAdvanced /> },
-        { id: 'professional', label: 'Professioneel', description: 'Ik speel beroepsmatig of geef les.', icon: <ICONS.SkillProfessional /> },
-      ];
-      content = <Step question="Wat is het speelniveau?" hint="Speelt u met meerdere personen? Kies dan het hoogste niveau." options={opts} selected={answers.skillLevel} onSelect={id => choose('skillLevel', id as SkillLevel)} />;
     } else if (step === 'wishes') {
-      const opts: Option[] = [
-        { id: 'warm_sound', label: 'Warme klank', description: 'Rond en vol, vooral in de bas.', icon: <ICONS.Warm /> },
-        { id: 'bright_sound', label: 'Heldere klank', description: 'Direct en helder, goed hoorbaar.', icon: <ICONS.Bright /> },
-        { id: 'silent', label: 'Stil kunnen spelen', description: 'Met een silent-systeem speelt u op een koptelefoon.', icon: <ICONS.Silent /> },
-        { id: 'compact', label: 'Compact formaat', icon: <ICONS.Compact /> },
-        { id: 'top_brand', label: 'Topmerk', icon: <ICONS.TopBrand /> },
-        { id: 'value', label: 'Waardebehoud', icon: <ICONS.Value /> },
-        { id: 'design', label: 'Uitstraling', description: 'Bijvoorbeeld wit of notenhout.', icon: <ICONS.Design /> },
+      const silent: Option = { id: 'silent', label: 'Ook stil kunnen spelen', description: 'Met een silent-systeem speelt u op een koptelefoon.', icon: <ICONS.Silent /> };
+      const rest: Option[] = [
+        { id: 'warm_sound', label: 'Een warme, ronde klank', icon: <ICONS.Warm /> },
+        { id: 'bright_sound', label: 'Een heldere, directe klank', icon: <ICONS.Bright /> },
+        { id: 'top_brand', label: 'Een topmerk', icon: <ICONS.TopBrand /> },
+        { id: 'value', label: 'Goed waardebehoud', icon: <ICONS.Value /> },
+        { id: 'compact', label: 'Zo compact mogelijk', icon: <ICONS.Compact /> },
+        { id: 'design', label: 'Een opvallende uitvoering', description: 'Bijvoorbeeld wit of notenhout.', icon: <ICONS.Design /> },
       ];
+      const opts = answers.space === 'small' ? [silent, ...rest] : [...rest.slice(0, 2), silent, ...rest.slice(2)];
       content = (
         <>
-          <Step question="Wat vindt u belangrijk?" hint={`Kies maximaal ${MAX_WISHES}, of ga direct door als u geen voorkeur heeft.`} options={opts} selected={answers.priorities} onSelect={id => toggleWish(id as Priority)} multiSelect maxSelect={MAX_WISHES} />
+          <Step question="Wat vindt u nog meer belangrijk?" hint={`Kies maximaal ${MAX_WISHES}. Geen voorkeur? Ga dan direct door.`} options={opts} selected={answers.priorities} onSelect={id => toggleWish(id as Priority)} multiSelect maxSelect={MAX_WISHES} />
           <div className="kh-row kh-row--end">
             <button type="button" className="kh-btn" onClick={finish}>
-              {answers.priorities.length ? 'Toon mijn advies' : 'Geen voorkeur, toon mijn advies'}
+              {editing ? 'Advies bijwerken' : answers.priorities.length ? 'Toon mijn advies' : 'Geen voorkeur, toon mijn advies'}
             </button>
           </div>
         </>
@@ -175,15 +184,14 @@ const App: React.FC = () => {
     }
   }
 
+  const budgetLabel = answers.budget === 'unknown' ? 'Nog onbekend' : BUDGETS.find(b => b.id === answers.budget)?.label;
   const summary = showResults ? ([
-    answers.instrumentType && { label: 'Instrument', value: LABELS.type[answers.instrumentType], step: 0 },
-    answers.space && { label: 'Ruimte', value: LABELS.space[answers.space], step: 1 },
-    answers.budget && { label: 'Budget', value: BUDGETS.find(b => b.id === answers.budget)!.label, step: 2 },
-    answers.condition && { label: 'Staat', value: LABELS.condition[answers.condition], step: 3 },
-    answers.skillLevel && { label: 'Niveau', value: LABELS.skill[answers.skillLevel], step: 4 },
-    answers.instrumentType && answers.instrumentType !== 'digital' && {
-      label: 'Wensen', value: answers.priorities.length ? answers.priorities.map(p => LABELS.wishes[p]).join(', ') : 'Geen voorkeur', step: 5,
-    },
+    answers.player && { label: 'Speler', value: LABELS.player[answers.player], step: 0 },
+    answers.instrumentType && { label: 'Instrument', value: LABELS.type[answers.instrumentType], step: 1 },
+    answers.space && { label: 'Ruimte', value: LABELS.space[answers.space], step: 2 },
+    budgetLabel && { label: 'Budget', value: budgetLabel, step: 3 },
+    answers.condition && { label: 'Staat', value: LABELS.condition[answers.condition], step: 4 },
+    { label: 'Wensen', value: answers.priorities.length ? answers.priorities.map(p => LABELS.wishes[p]).join(', ') : 'Geen voorkeur', step: 5 },
   ].filter(Boolean) as { label: string; value: string; step: number }[]) : [];
 
   const progress = showResults ? 100 : Math.round((stepIndex / STEPS.length) * 100);
@@ -202,12 +210,14 @@ const App: React.FC = () => {
 
       <main className="kh-main">
         {showResults
-          ? <Results advice={advice} status={status} summary={summary} onEdit={goTo} onReset={reset} onRetry={load} />
+          ? <Results advice={advice} status={status} summary={summary} onEdit={edit} onReset={reset} onRetry={load} />
           : content}
 
-        {!showResults && stepIndex > 0 && (
+        {!showResults && (editing || stepIndex > 0) && (
           <div className="kh-nav">
-            <button type="button" className="kh-textbtn kh-textbtn--back" onClick={() => goTo(stepIndex - 1)}>Vorige vraag</button>
+            {editing
+              ? <button type="button" className="kh-textbtn kh-textbtn--back" onClick={finish}>Terug naar mijn advies</button>
+              : <button type="button" className="kh-textbtn kh-textbtn--back" onClick={() => goTo(stepIndex - 1)}>Vorige vraag</button>}
           </div>
         )}
       </main>
