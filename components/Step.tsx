@@ -1,81 +1,71 @@
+import React, { useEffect, useRef } from 'react';
 
-import React from 'react';
-
-interface Option {
+export interface Option {
   id: string;
   label: string;
+  description?: string;
+  meta?: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 interface StepProps {
   question: string;
-  subtitle?: string;
+  hint?: string;
   options: Option[];
-  selectedId: string | string[];
+  selected: string | string[] | undefined;
   onSelect: (id: string) => void;
   multiSelect?: boolean;
+  maxSelect?: number;
 }
 
-const Step: React.FC<StepProps> = ({ question, subtitle, options, selectedId, onSelect, multiSelect = false }) => {
-  const isSelected = (id: string) => {
-    if (multiSelect && Array.isArray(selectedId)) {
-      return selectedId.includes(id);
-    }
-    return selectedId === id;
-  };
+const Check = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M5 12.5l4.5 4.5L19 7.5" strokeLinecap="square" />
+  </svg>
+);
+
+const Step: React.FC<StepProps> = ({ question, hint, options, selected, onSelect, multiSelect = false, maxSelect }) => {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const isSelected = (id: string) => (Array.isArray(selected) ? selected.includes(id) : selected === id);
+  const atMax = multiSelect && Array.isArray(selected) && !!maxSelect && selected.length >= maxSelect;
+
+  useEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, [question]);
 
   return (
-    <div className="flex flex-col animate-fadeIn">
-      <div className="text-center mb-10">
-        <h2 className="text-2xl md:text-3xl font-serif text-gray-900 mb-2 leading-tight">
-          {question}
-        </h2>
-        {subtitle && (
-          <p className="text-gray-400 text-sm font-medium tracking-wide">
-            {subtitle}
-          </p>
-        )}
+    <fieldset className="kh-step kh-fade">
+      <legend className="kh-visually-hidden">{question}</legend>
+      <h2 className="kh-question" ref={headingRef} tabIndex={-1}>{question}</h2>
+      {hint && <p className="kh-hint">{hint}</p>}
+      <div className={`kh-options${options.length > 4 ? ' kh-options--many' : ''}`}>
+        {options.map(o => {
+          const sel = isSelected(o.id);
+          const disabled = o.disabled || (atMax && !sel);
+          return (
+            <button
+              key={o.id}
+              type="button"
+              className={`kh-option${sel ? ' is-selected' : ''}`}
+              aria-pressed={sel}
+              disabled={disabled}
+              onClick={() => onSelect(o.id)}
+            >
+              {o.icon && <span className="kh-option__icon" aria-hidden="true">{o.icon}</span>}
+              <span className="kh-option__text">
+                <span className="kh-option__label">{o.label}</span>
+                {o.description && <span className="kh-option__desc">{o.description}</span>}
+                {o.meta && <span className="kh-option__meta">{o.meta}</span>}
+              </span>
+              <span className={`kh-option__mark${multiSelect ? ' is-box' : ''}`} aria-hidden="true">
+                {sel && <Check />}
+              </span>
+            </button>
+          );
+        })}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {options.map((option) => (
-          <button
-            key={option.id}
-            onClick={() => onSelect(option.id)}
-            className={`
-              flex items-center p-6 rounded-2xl border-2 transition-all duration-300 text-left group
-              ${isSelected(option.id) 
-                ? 'border-schumer-red bg-schumer-red/[0.02] shadow-[0_4px_20px_rgba(188,3,28,0.1)]' 
-                : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-md'}
-            `}
-          >
-            {option.icon && (
-              <div className={`
-                mr-5 p-3 rounded-xl transition-all duration-300
-                ${isSelected(option.id) 
-                  ? 'bg-schumer-red text-white' 
-                  : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-600'}
-              `}>
-                {option.icon}
-              </div>
-            )}
-            <span className={`text-base font-semibold tracking-tight ${isSelected(option.id) ? 'text-gray-900' : 'text-gray-600 group-hover:text-gray-800'}`}>
-              {option.label}
-            </span>
-            {multiSelect && (
-              <div className={`ml-auto w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300
-                ${isSelected(option.id) ? 'bg-schumer-red border-schumer-red' : 'border-gray-200'}
-              `}>
-                {isSelected(option.id) && (
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
+    </fieldset>
   );
 };
 
